@@ -232,7 +232,7 @@ class PandasViewer(QtGui.QMainWindow):
         self.df_viewer = DataFrameTableView(None)
         left_layout.addWidget(self.df_viewer)
 
-        self.df_plot_viewer = DataFramePImprIlotWidget()
+        self.df_plot_viewer = DataFramePlotWidget()
         splitter.addWidget(self.df_plot_viewer)
 
         self.dataframe = dataframe
