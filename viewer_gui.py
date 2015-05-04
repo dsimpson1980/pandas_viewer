@@ -261,13 +261,13 @@ class PandasViewer(QtGui.QMainWindow):
     """Main window for the GUI
 
     """
-    def __init__(self, dataframe):
+    def __init__(self, obj):
         """
 
         Parameters
         ----------
-        dataframe: pandas.DataFrame
-            The dataframe to display
+        obj: pandas.Series, pandas.DataFrame, pandas.Panel, dict
+            The obj to iterate through to allow selection
 
         Returns
         -------
@@ -282,7 +282,8 @@ class PandasViewer(QtGui.QMainWindow):
         <viewer_gui.PandasViewer object at ...>
         """
         QtGui.QMainWindow.__init__(self)
-
+        if isinstance(obj, (pandas.Series, pandas.DataFrame, pandas.Panel)):
+            obj = {str(type(obj)): obj}
         window = QtGui.QWidget()
         self.setCentralWidget(window)
         main_layout = QtGui.QVBoxLayout()
@@ -294,7 +295,7 @@ class PandasViewer(QtGui.QMainWindow):
         left_layout = QtGui.QVBoxLayout()
         left_panel.setLayout(left_layout)
         splitter.addWidget(left_panel)
-        self.tree_widget = PandasTreeWidget(self, dict(dataframe=dataframe))
+        self.tree_widget = PandasTreeWidget(self, obj=obj)
         left_layout.addWidget(self.tree_widget)
         self.df_viewer = DataFrameTableView(None)
         left_layout.addWidget(self.df_viewer)
@@ -302,7 +303,7 @@ class PandasViewer(QtGui.QMainWindow):
         self.df_plot_viewer = DataFramePlotWidget()
         splitter.addWidget(self.df_plot_viewer)
 
-        self.dataframe = dataframe
+        self.dataframe = obj[obj.keys()[0]]
         self.dataframe_changed(self.dataframe)
         self.init_menu()
 
