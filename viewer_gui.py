@@ -240,16 +240,15 @@ class PandasViewer(QtGui.QMainWindow):
         self.df_plot_viewer.draw()
 
 
-def main():
-    """Main method for the app"""
-    app = QtGui.QApplication(sys.argv)
-    #ToDo this is just a random dataframe for testing
-    timestamps = pandas.date_range('1-Apr-14', '30-Apr-14')
-    dataframe = pandas.DataFrame(
-        numpy.random.rand(len(timestamps), 2), index=timestamps)
-    pandas_viewer = PandasViewer(dataframe)
-    pandas_viewer.show()
-    menubar = QtGui.QMenuBar()
+def init_menu(window):
+    """Initiate the drop down menus for the window
+
+    Parameters
+    ----------
+    window: QtGui.QMainWindow
+        The window to add the menubar to
+    """
+    menubar = QtGui.QMenuBar(window)
     action_menu = QtGui.QMenu('Actions')
     menubar.addMenu(action_menu)
     action_menu.addAction('Open File')
@@ -259,7 +258,21 @@ def main():
     for freq in ['Daily', 'Hourly', 'Minutely']:
         freq_submenu.addAction(freq)
     style_menu.addMenu(freq_submenu)
-    style_menu.addAction('Legend')
+    legend_action = QtGui.QAction(
+        'Legend', style_menu, checkable=True, checked=True)
+    style_menu.addAction(legend_action)
+
+
+def main():
+    """Main method for the app"""
+    app = QtGui.QApplication(sys.argv)
+    #ToDo this is just a random dataframe for testing
+    timestamps = pandas.date_range('1-Apr-14', '30-Apr-14')
+    dataframe = pandas.DataFrame(
+        numpy.random.rand(len(timestamps), 2), index=timestamps)
+    pandas_viewer = PandasViewer(dataframe)
+    pandas_viewer.show()
+    init_menu(pandas_viewer)
     app.exec_()
 
 if __name__ == '__main__':
