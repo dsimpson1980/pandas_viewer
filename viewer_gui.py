@@ -221,11 +221,12 @@ class PandasViewer(QtGui.QMainWindow):
         hbox.addWidget(self.df_viewer)
         self.df_plot_viewer = DataFramePlotWidget()
         hbox.addWidget(self.df_plot_viewer)
-        self.dataframe_changed(dataframe)
+        self.dataframe = dataframe
+        self.dataframe_changed(self.dataframe)
         hbox.addWidget(self.df_viewer)
         window.setLayout(hbox)
         self.resize(500, 450)
-        QtGui.QMenu
+        self.init_menu()
 
     def dataframe_changed(self, df):
         """Set the dataframe in the dataframe viewer to df
@@ -239,40 +240,55 @@ class PandasViewer(QtGui.QMainWindow):
         self.df_plot_viewer.set_dataframe(df)
         self.df_plot_viewer.draw()
 
+    def init_menu(self):
+        """Initiate the drop down menus for the window
 
-def init_menu(window):
-    """Initiate the drop down menus for the window
+        Parameters
+        ----------
+        window: QtGui.QMainWindow
+            The window to add the menubar to
+        """
+        menubar = QtGui.QMenuBar(self)
+        action_menu = QtGui.QMenu('Actions')
+        menubar.addMenu(action_menu)
+        action_menu.addAction('Open File')
+        style_menu = QtGui.QMenu('Style')
+        menubar.addMenu(style_menu)
+        self.freq_submenu = QtGui.QMenu('Freq')
+        self.mapper = QtCore.QSignalMapper(self)
+        for freq in ['D', 'H', 'T']:
+            action = QtGui.QAction(freq, self, checkable=True)
+            self.mapper.setMapping(action, freq)
+            action.triggered.connect(self.mapper.map)
+            self.freq_submenu.addAction(action)
+        self.mapper.mapped['QString'].connect(self.change_freq)
+        style_menu.addMenu(self.freq_submenu)
+        legend_action = QtGui.QAction(
+            'Legend', style_menu, checkable=True, checked=True)
+        style_menu.addAction(legend_action)
 
-    Parameters
-    ----------
-    window: QtGui.QMainWindow
-        The window to add the menubar to
-    """
-    menubar = QtGui.QMenuBar(window)
-    action_menu = QtGui.QMenu('Actions')
-    menubar.addMenu(action_menu)
-    action_menu.addAction('Open File')
-    style_menu = QtGui.QMenu('Style')
-    menubar.addMenu(style_menu)
-    freq_submenu = QtGui.QMenu('Freq')
-    for freq in ['Daily', 'Hourly', 'Minutely']:
-        freq_submenu.addAction(freq)
-    style_menu.addMenu(freq_submenu)
-    legend_action = QtGui.QAction(
-        'Legend', style_menu, checkable=True, checked=True)
-    style_menu.addAction(legend_action)
+    def change_freq(self, freq):
+        """Resample the original pandas.DataFrame to frequency freq
+
+        Parameters
+        ----------
+        freq: str
+            The frequency to resample the dataframe to
+        """
+        for action in self.freq_submenu.actions():
+            action.setChecked(action.text() == freq)
+        self.dataframe_changed(self.dataframe.resample(freq))
 
 
 def main():
     """Main method for the app"""
     app = QtGui.QApplication(sys.argv)
     #ToDo this is just a random dataframe for testing
-    timestamps = pandas.date_range('1-Apr-14', '30-Apr-14')
+    timestamps = pandas.date_range('1-Apr-14', '30-Apr-14', freq='H')
     dataframe = pandas.DataFrame(
         numpy.random.rand(len(timestamps), 2), index=timestamps)
     pandas_viewer = PandasViewer(dataframe)
     pandas_viewer.show()
-    init_menu(pandas_viewer)
     app.exec_()
 
 if __name__ == '__main__':
