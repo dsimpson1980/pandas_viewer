@@ -3,6 +3,14 @@ import pandas
 import numpy
 import sys
 
+import matplotlib
+
+matplotlib.rcParams['backend.qt4'] = 'PySide'
+
+from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg as NavigationToolbar
+from matplotlib.figure import Figure
+
 
 class DataFrameTableView(QtGui.QTableView):
 
@@ -130,6 +138,55 @@ class DataFrameTableModel(QtCore.QAbstractTableModel):
         return value
 
 
+class DataFramePlotWidget(QtGui.QWidget):
+    """QWidget to hold a matplotlib plot of the pandas.DataFrame
+
+    """
+    def __init__(self, df=None):
+        """Initiates the figure, canvas, toolbar and subplot necessary for
+        plotting the dataframe
+
+        Parameters
+        ----------
+        df: pandas.DataFrame, optional
+            The dataframe used to initialise the plot, defaults to None
+
+        Returns
+        -------
+        DataFramePlotWidget
+        """
+        QtGui.QWidget.__init__(self)
+        self.fig = Figure()
+        self.canvas = FigureCanvas(self.fig)
+        self.canvas.setParent(self)
+        self.toolbar = NavigationToolbar(self.canvas, self)
+
+        self.vbox = QtGui.QVBoxLayout()
+        self.vbox.addWidget(self.toolbar)
+        self.vbox.addWidget(self.canvas)
+
+        self.setLayout(self.vbox)
+        self.set_dataframe(df)
+        self.subplot = self.fig.add_subplot(111)
+
+    def set_dataframe(self, dataframe):
+        """Set the pandas.DataFrame for the widget and plot it on the subplot
+
+        Parameters
+        ----------
+        dataframe: pandas.DataFrame
+            The dataframe to plot
+        """
+        self.dataframe = dataframe
+        if dataframe is not None:
+            self.subplot.clear()
+            self.subplot.plot_date(dataframe.index, dataframe.values, '-')
+
+    def draw(self):
+        """Draw the Canvas for the plot Figure"""
+        self.canvas.draw()
+
+
 class PandasViewer(QtGui.QMainWindow):
     """Main window for the GUI
 
@@ -156,12 +213,17 @@ class PandasViewer(QtGui.QMainWindow):
         """
         QtGui.QMainWindow.__init__(self)
         window = QtGui.QWidget()
-        main_layout = QtGui.QVBoxLayout()
-        window.setLayout(main_layout)
         self.setCentralWidget(window)
+        hbox = QtGui.QHBoxLayout()
+        hbox.stretch(1)
+
         self.df_viewer = DataFrameTableView(None)
+        hbox.addWidget(self.df_viewer)
+        self.df_plot_viewer = DataFramePlotWidget()
+        hbox.addWidget(self.df_plot_viewer)
         self.dataframe_changed(dataframe)
-        main_layout.addWidget(self.df_viewer)
+        hbox.addWidget(self.df_viewer)
+        window.setLayout(hbox)
         self.resize(500, 450)
 
     def dataframe_changed(self, df):
@@ -173,6 +235,8 @@ class PandasViewer(QtGui.QMainWindow):
             The dataframe to set
         """
         self.df_viewer.set_dataframe(df)
+        self.df_plot_viewer.set_dataframe(df)
+        self.df_plot_viewer.draw()
 
 
 def main():
