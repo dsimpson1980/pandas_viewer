@@ -225,6 +225,7 @@ class PandasViewer(QtGui.QMainWindow):
         hbox.addWidget(self.df_viewer)
         window.setLayout(hbox)
         self.resize(500, 450)
+        QtGui.QMenu
 
     def dataframe_changed(self, df):
         """Set the dataframe in the dataframe viewer to df
@@ -248,6 +249,17 @@ def main():
         numpy.random.rand(len(timestamps), 2), index=timestamps)
     pandas_viewer = PandasViewer(dataframe)
     pandas_viewer.show()
+    menubar = QtGui.QMenuBar()
+    action_menu = QtGui.QMenu('Actions')
+    menubar.addMenu(action_menu)
+    action_menu.addAction('Open File')
+    style_menu = QtGui.QMenu('Style')
+    menubar.addMenu(style_menu)
+    freq_submenu = QtGui.QMenu('Freq')
+    for freq in ['Daily', 'Hourly', 'Minutely']:
+        freq_submenu.addAction(freq)
+    style_menu.addMenu(freq_submenu)
+    style_menu.addAction('Legend')
     app.exec_()
 
 if __name__ == '__main__':
