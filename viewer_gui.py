@@ -215,6 +215,9 @@ class PandasTreeWidget(QtGui.QTreeWidget):
     """Widget used to expand the columns of the dataframe for selection
 
     """
+
+    selection_made = QtCore.Signal((pandas.DataFrame, ))
+
     def __init__(self, parent=None, obj=None):
         """Initiate the tree structure with the obj
 
@@ -257,6 +260,38 @@ class PandasTreeWidget(QtGui.QTreeWidget):
                     leaf.addChild(sub_node)
         self.expandToDepth(3)
 
+    def selectionChanged(self, selected, deselected):
+
+        result = {}
+        for item in self.selectedItems():
+            keys_for_item = item.keys
+            non_none_keys = [k for k in keys_for_item if k is not None]
+            if len(keys_for_item) == 1:
+                # pandas.Series
+                name = keys_for_item[0]
+                obj = self.obj[name]
+                if isinstance(obj, pandas.Series):
+                    result[name] = self.obj[name]
+                elif isinstance(obj, pandas.DataFrame):
+                    for col_name, ts in obj.iteritems():
+                        result['%s[%s]' % (name, col_name)] = ts
+            elif len(keys_for_item) == 2:
+                # pandas.DataFrame
+                df_name = keys_for_item[0]
+                df = self.obj[df_name]
+                if len(non_none_keys) == 2:
+                    col_name = keys_for_item[1]
+                    result['%s[%s]' % (df_name, col_name)] = df[col_name]
+                elif len(non_none_keys) == 1:
+                    for col_name, value in df.iteritems():
+                        result['%s[%s]' % (df_name, col_name)] = df[col_name]
+                else:
+                    raise ValueError('len of non_keys %s not covered' % len(non_none_keys))
+            else:
+                raise ValueError('len of keys %s is not covered' % len(keys_for_item))
+        result = pandas.DataFrame(result)
+        self.selection_made.emit(result)
+
 
 class PandasViewer(QtGui.QMainWindow):
     """Main window for the GUI"""
@@ -296,6 +331,7 @@ class PandasViewer(QtGui.QMainWindow):
         left_panel.setLayout(left_layout)
         splitter.addWidget(left_panel)
         self.tree_widget = PandasTreeWidget(self, obj=obj)
+        self.tree_widget.selection_made.connect(self.dataframe_changed)
         left_layout.addWidget(self.tree_widget)
         self.df_viewer = DataFrameTableView(None)
         left_layout.addWidget(self.df_viewer)
