@@ -192,6 +192,71 @@ class DataFramePlotWidget(QtGui.QWidget):
         self.canvas.draw()
 
 
+class PandasTreeWidgetItem(QtGui.QTreeWidgetItem):
+    """Basic node of a tree widget"""
+
+    def __init__(self, keys):
+        """Initiate the leaf with the non-None keys
+
+        Parameters
+        ----------
+        keys: list(str)
+            The names for the
+
+        Returns
+        -------
+        PandasTreeWidgetItem
+        """
+        self.keys = [k for k in keys if k is not None]
+        QtGui.QTreeWidgetItem.__init__(self, [str(self.keys[-1])])
+
+
+class PandasTreeWidget(QtGui.QTreeWidget):
+    """Widget used to expand the columns of the dataframe for selection
+
+    """
+    def __init__(self, parent=None, obj=None):
+        """Initiate the tree structure with the obj
+
+        Parameters
+        ----------
+        parent: object
+            The parent for the tree, should be the mainwindow for the gui
+        obj: object
+            The object to expand and display in the tree structure
+
+        Returns
+        -------
+        PandasTreeWidget
+        """
+        QtGui.QTreeWidget.__init__(self, parent)
+        self.setVerticalScrollMode(self.ScrollPerPixel)
+        self.setColumnCount(1)
+        self.setHeaderLabels(['Pandas Variables'])
+        self.set_tree(obj)
+        self.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
+
+    def set_tree(self, obj):
+        """Iterate through the object, obj, levels and set the nodes in the tree
+
+        Parameters
+        ----------
+        obj: object, iterable
+            The object to iterate through
+        """
+        self.clear()
+        self.obj = obj
+        root = self.invisibleRootItem()
+        for key, value in obj.items():
+            leaf = PandasTreeWidgetItem((key, None))
+            root.addChild(leaf)
+            if isinstance(value, pandas.DataFrame):
+                root.addChild(leaf)
+                for column in value.columns:
+                    sub_node = PandasTreeWidgetItem([key, column])
+                    leaf.addChild(sub_node)
+
+
 class PandasViewer(QtGui.QMainWindow):
     """Main window for the GUI
 
@@ -229,6 +294,8 @@ class PandasViewer(QtGui.QMainWindow):
         left_layout = QtGui.QVBoxLayout()
         left_panel.setLayout(left_layout)
         splitter.addWidget(left_panel)
+        self.tree_widget = PandasTreeWidget(self, dict(dataframe=dataframe))
+        left_layout.addWidget(self.tree_widget)
         self.df_viewer = DataFrameTableView(None)
         left_layout.addWidget(self.df_viewer)
 
