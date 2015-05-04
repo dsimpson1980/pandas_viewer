@@ -27,6 +27,7 @@ class DataFrameTableView(QtGui.QTableView):
         DataFrameTableView
         """
         QtGui.QTableView.__init__(self)
+        self.resize(500, 500)
         if df is not None:
             self.set_dataframe(df)
 
@@ -216,20 +217,26 @@ class PandasViewer(QtGui.QMainWindow):
         <viewer_gui.PandasViewer object at ...>
         """
         QtGui.QMainWindow.__init__(self)
+
         window = QtGui.QWidget()
         self.setCentralWidget(window)
-        hbox = QtGui.QHBoxLayout()
-        hbox.stretch(1)
+        main_layout = QtGui.QVBoxLayout()
+        window.setLayout(main_layout)
+        splitter = QtGui.QSplitter(QtCore.Qt.Orientation.Horizontal)
+        main_layout.addWidget(splitter)
 
+        left_panel = QtGui.QWidget()
+        left_layout = QtGui.QVBoxLayout()
+        left_panel.setLayout(left_layout)
+        splitter.addWidget(left_panel)
         self.df_viewer = DataFrameTableView(None)
-        hbox.addWidget(self.df_viewer)
-        self.df_plot_viewer = DataFramePlotWidget()
-        hbox.addWidget(self.df_plot_viewer)
+        left_layout.addWidget(self.df_viewer)
+
+        self.df_plot_viewer = DataFramePImprIlotWidget()
+        splitter.addWidget(self.df_plot_viewer)
+
         self.dataframe = dataframe
         self.dataframe_changed(self.dataframe)
-        hbox.addWidget(self.df_viewer)
-        window.setLayout(hbox)
-        self.resize(500, 450)
         self.init_menu()
 
     def dataframe_changed(self, df):
