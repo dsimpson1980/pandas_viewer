@@ -255,12 +255,12 @@ class PandasTreeWidget(QtGui.QTreeWidget):
                 for column in value.columns:
                     sub_node = PandasTreeWidgetItem([key, column])
                     leaf.addChild(sub_node)
+        self.expandToDepth(3)
 
 
 class PandasViewer(QtGui.QMainWindow):
-    """Main window for the GUI
+    """Main window for the GUI"""
 
-    """
     def __init__(self, obj):
         """
 
