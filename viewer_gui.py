@@ -108,6 +108,27 @@ class DataFrameTableModel(QtCore.QAbstractTableModel):
                 value = str(self.df.iloc[row, col-1])
         return value
 
+    def headerData(self, idx, orientation, role):
+        """Returns the column name of the dataframe at idx or 'Timestamp' if the
+         idx = 0
+
+        idx: int
+            The integer index of the column header, 0 indicates the index
+        orientation: QtCore.Qt.Orientation
+            Indicates the orientation of the object, either QtCore.Qt.Horizontal
+            or QtCore.Qt.Vertical
+        role: int
+
+        Returns
+        -------
+        str
+        """
+        if orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole:
+            value = 'Timestamp' if idx == 0 else self.df.columns[idx-1]
+        else:
+            value = None
+        return value
+
 
 class PandasViewer(QtGui.QMainWindow):
     """Main window for the GUI
