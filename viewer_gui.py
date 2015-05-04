@@ -261,7 +261,18 @@ class PandasTreeWidget(QtGui.QTreeWidget):
         self.expandToDepth(3)
 
     def selectionChanged(self, selected, deselected):
+        """Construct a DataFrame from selections in the tree and pass to
+        dataframe_changed to populate the table widget and pass to the plot.
 
+        A signal is emitted to instigate dataframe_changed
+
+        Parameters
+        ----------
+        selected: list(PandasTreeWidgetItem)
+            List of WidgetItems selected
+        deselected: list(PandasTreeWidgetItem)
+            List of WidgetItems deselected
+        """
         result = {}
         for item in self.selectedItems():
             keys_for_item = item.keys
