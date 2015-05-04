@@ -166,8 +166,9 @@ class DataFramePlotWidget(QtGui.QWidget):
         self.vbox.addWidget(self.canvas)
 
         self.setLayout(self.vbox)
-        self.set_dataframe(df)
         self.subplot = self.fig.add_subplot(111)
+        self.legend = self.subplot.legend([])
+        self.set_dataframe(df)
 
     def set_dataframe(self, dataframe):
         """Set the pandas.DataFrame for the widget and plot it on the subplot
@@ -181,6 +182,9 @@ class DataFramePlotWidget(QtGui.QWidget):
         if dataframe is not None:
             self.subplot.clear()
             self.subplot.plot_date(dataframe.index, dataframe.values, '-')
+            legend = self.subplot.legend(self.dataframe.columns)
+            legend.set_visible(self.legend.get_visible())
+            self.legend = legend
 
     def draw(self):
         """Draw the Canvas for the plot Figure"""
@@ -263,9 +267,10 @@ class PandasViewer(QtGui.QMainWindow):
             self.freq_submenu.addAction(action)
         self.mapper.mapped['QString'].connect(self.change_freq)
         style_menu.addMenu(self.freq_submenu)
-        legend_action = QtGui.QAction(
+        self.legend_action = QtGui.QAction(
             'Legend', style_menu, checkable=True, checked=True)
-        style_menu.addAction(legend_action)
+        self.legend_action.triggered.connect(self.change_legend)
+        style_menu.addAction(self.legend_action)
 
     def change_freq(self, freq):
         """Resample the original pandas.DataFrame to frequency freq
@@ -278,6 +283,14 @@ class PandasViewer(QtGui.QMainWindow):
         for action in self.freq_submenu.actions():
             action.setChecked(action.text() == freq)
         self.dataframe_changed(self.dataframe.resample(freq))
+
+    def change_legend(self):
+        """Set the visibility of the subplot legend to match the checked status
+        of the submenu item.  The submenu item is checkable and as such changes
+        state automatically when clicked
+        """
+        self.df_plot_viewer.legend.set_visible(self.legend_action.isChecked())
+        self.df_plot_viewer.draw()
 
 
 def main():
