@@ -330,6 +330,7 @@ class PandasViewer(QtGui.QMainWindow):
         QtGui.QMainWindow.__init__(self)
         if isinstance(obj, (pandas.Series, pandas.DataFrame, pandas.Panel)):
             obj = {str(type(obj)): obj}
+        self.freq = None
         window = QtGui.QWidget()
         self.setCentralWidget(window)
         main_layout = QtGui.QVBoxLayout()
@@ -341,6 +342,7 @@ class PandasViewer(QtGui.QMainWindow):
         left_layout = QtGui.QVBoxLayout()
         left_panel.setLayout(left_layout)
         splitter.addWidget(left_panel)
+        self.obj = obj
         self.tree_widget = PandasTreeWidget(self, obj=obj)
         self.tree_widget.selection_made.connect(self.dataframe_changed)
         left_layout.addWidget(self.tree_widget)
@@ -349,9 +351,8 @@ class PandasViewer(QtGui.QMainWindow):
 
         self.df_plot_viewer = DataFramePlotWidget()
         splitter.addWidget(self.df_plot_viewer)
-
-        self.dataframe = obj[obj.keys()[0]]
-        self.dataframe_changed(self.dataframe)
+        self.df = None
+        self.displayed_df = None
         self.init_menu()
 
     def dataframe_changed(self, df):
@@ -362,8 +363,10 @@ class PandasViewer(QtGui.QMainWindow):
         df: pandas.DataFrame
             The dataframe to set
         """
-        self.df_viewer.set_dataframe(df)
-        self.df_plot_viewer.set_dataframe(df)
+        self.df = df
+        self.displayed_df = self.df if self.freq is None else self.df.resample(self.freq)
+        self.df_viewer.set_dataframe(self.displayed_df)
+        self.df_plot_viewer.set_dataframe(self.displayed_df)
         self.df_plot_viewer.draw()
 
     def init_menu(self):
@@ -402,9 +405,11 @@ class PandasViewer(QtGui.QMainWindow):
         freq: str
             The frequency to resample the dataframe to
         """
+        self.freq = freq
         for action in self.freq_submenu.actions():
             action.setChecked(action.text() == freq)
-        self.dataframe_changed(self.dataframe.resample(freq))
+        if self.df is not None:
+            self.dataframe_changed(self.df)
 
     def change_legend(self):
         """Set the visibility of the subplot legend to match the checked status
@@ -420,9 +425,10 @@ def main():
     app = QtGui.QApplication(sys.argv)
     #ToDo this is just a random dataframe for testing
     timestamps = pandas.date_range('1-Apr-14', '30-Apr-14', freq='H')
+    ts = pandas.Series(numpy.random.rand(len(timestamps)), timestamps)
     dataframe = pandas.DataFrame(
         numpy.random.rand(len(timestamps), 2), index=timestamps)
-    pandas_viewer = PandasViewer(dataframe)
+    pandas_viewer = PandasViewer(dict(ts=ts, df=dataframe))
     pandas_viewer.show()
     app.exec_()
 
