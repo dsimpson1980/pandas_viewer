@@ -17,6 +17,7 @@ from simp_tools import pickling
 # ToDo Add email plot functionality (save png to buffer then attach to email)
 # ToDo Add difference plots action
 # ToDo Add difference plots functionality
+# ToDo fix pyinstaller build so that menu items are shown
 
 
 class DataFrameTableView(QtGui.QTableView):
