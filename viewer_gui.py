@@ -8,8 +8,10 @@ import matplotlib
 matplotlib.rcParams['backend.qt4'] = 'PySide'
 
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg as NavigationToolbar
+from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
+
+from simp_tools import pickling
 
 
 class DataFrameTableView(QtGui.QTableView):
@@ -331,6 +333,7 @@ class PandasViewer(QtGui.QMainWindow):
         if isinstance(obj, (pandas.Series, pandas.DataFrame, pandas.Panel)):
             obj = {str(type(obj)): obj}
         self.freq = None
+        self.filepath = None
         window = QtGui.QWidget()
         self.setCentralWidget(window)
         main_layout = QtGui.QVBoxLayout()
@@ -380,7 +383,7 @@ class PandasViewer(QtGui.QMainWindow):
         menubar = QtGui.QMenuBar(self)
         action_menu = QtGui.QMenu('Actions')
         menubar.addMenu(action_menu)
-        action_menu.addAction('Open File')
+        action_menu.addAction('Open File', self.open_file)
         style_menu = QtGui.QMenu('Style')
         menubar.addMenu(style_menu)
         self.freq_submenu = QtGui.QMenu('Freq')
@@ -418,6 +421,12 @@ class PandasViewer(QtGui.QMainWindow):
         """
         self.df_plot_viewer.legend.set_visible(self.legend_action.isChecked())
         self.df_plot_viewer.draw()
+
+    def open_file(self):
+        self.filepath, _ = QtGui.QFileDialog.getOpenFileName(
+            self, 'Select pickle to load')
+        self.obj = pickling.load(self.filepath)
+        self.tree_widget.set_tree(self.obj)
 
 
 def main():
