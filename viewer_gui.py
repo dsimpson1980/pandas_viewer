@@ -197,7 +197,7 @@ class DataFramePlotWidget(QtGui.QWidget):
 class PandasTreeWidgetItem(QtGui.QTreeWidgetItem):
     """Basic node of a tree widget"""
 
-    def __init__(self, keys):
+    def __init__(self, *args):
         """Initiate the leaf with the non-None keys
 
         Parameters
@@ -209,8 +209,9 @@ class PandasTreeWidgetItem(QtGui.QTreeWidgetItem):
         -------
         PandasTreeWidgetItem
         """
-        self.keys = [k for k in keys if k is not None]
-        QtGui.QTreeWidgetItem.__init__(self, [str(self.keys[-1])])
+        self.keys = args
+        non_none_keys = [k for k in args if k is not None]
+        QtGui.QTreeWidgetItem.__init__(self, [str(non_none_keys[-1])])
 
 
 class PandasTreeWidget(QtGui.QTreeWidget):
@@ -253,13 +254,25 @@ class PandasTreeWidget(QtGui.QTreeWidget):
         self.obj = obj
         root = self.invisibleRootItem()
         for key, value in obj.items():
-            leaf = PandasTreeWidgetItem((key, None))
-            root.addChild(leaf)
-            if isinstance(value, pandas.DataFrame):
+            if isinstance(value, pandas.Series):
+                leaf = PandasTreeWidgetItem(key)
                 root.addChild(leaf)
+            if isinstance(value, pandas.DataFrame):
+                twig = PandasTreeWidgetItem(key, None)
+                root.addChild(twig)
                 for column in value.columns:
-                    sub_node = PandasTreeWidgetItem([key, column])
-                    leaf.addChild(sub_node)
+                    leaf = PandasTreeWidgetItem(key, column)
+                    twig.addChild(leaf)
+            if isinstance(value, pandas.Panel):
+                branch = PandasTreeWidgetItem(key, None, None)
+                root.addChild(branch)
+                for mj in value.major_axis:
+                    twig = PandasTreeWidgetItem(key, mj, None)
+                    branch.addChild(twig)
+                    for mi in value.minor_axis:
+                        leaf = PandasTreeWidgetItem(key, mj, mi)
+                        twig.addChild(leaf)
+
         self.expandToDepth(3)
 
     def selectionChanged(self, selected, deselected):
@@ -300,6 +313,24 @@ class PandasTreeWidget(QtGui.QTreeWidget):
                         result['%s[%s]' % (df_name, col_name)] = df[col_name]
                 else:
                     raise ValueError('len of non_keys %s not covered' % len(non_none_keys))
+            elif len(keys_for_item) == 3:
+                # pandas.Panel selection
+                pl = self.obj[keys_for_item[0]]
+                pl_name, mj, mi = keys_for_item
+                if mj is None:
+                    # whole panel selection
+                    # ToDo submit bug report for doctsring pandas.Panel.iteritems()
+                    for mj in pl.major_axis:
+                        for mi in pl.minor_axis:
+                            result['%s[:, %s, %s]' % (pl_name, mj, mi
+                                )] = pl.ix[:, mj, mi]
+                elif mi is None:
+                    # dataframe slice of Panel
+                    for mi in pl.minor_axis:
+                        result['%s[:, %s, %s]' % (pl_name, mj, mi)] = pl.ix[:, mj, mi]
+                else:
+                    # single Series slice of Panel
+                    result['%s[:, %s, %s]' % tuple(keys_for_item)] = pl.ix[:, mj, mi]
             else:
                 raise ValueError('len of keys %s is not covered' % len(keys_for_item))
         result = pandas.DataFrame(result)
