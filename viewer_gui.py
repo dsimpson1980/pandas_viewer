@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import sys
 import os
+import h5py
 
 import matplotlib
 
@@ -467,9 +468,14 @@ class PandasViewer(QtGui.QMainWindow):
         if ext == '.pickle':
             obj = pickling.load(self.filepath)
         elif ext == '.h5':
-            obj = pd.read_hdf(self.filepath, filename)
-            col_idx = [k for k, d in obj.dtypes.iteritems() if d.type == np.float64]
-            obj = obj[col_idx]
+            with h5py.File(self.filepath, 'r') as file_obj:
+                keys = file_obj.keys()
+            obj = {}
+            for key in keys:
+                obj[key] = pd.read_hdf(self.filepath, key)
+                col_idx = [k for k, d in obj[key].dtypes.iteritems() if d.type == np.float64]
+                obj[key].index = [pd.Timestamp(t, tz='UTC') for t in obj[key]['timestamp']]
+                obj[key] = obj[key][col_idx]
         else:
             raise ValueError('File type %s not supported', ext)
         if isinstance(obj, dict):
