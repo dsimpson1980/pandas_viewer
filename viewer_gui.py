@@ -506,7 +506,8 @@ class PandasViewer(QtGui.QMainWindow):
             for key in keys:
                 obj[key] = pd.read_hdf(self.filepath, key)
                 col_idx = [k for k, d in obj[key].dtypes.iteritems() if d.type == np.float64]
-                obj[key].index = [pd.Timestamp(t, tz='UTC') for t in obj[key]['timestamp']]
+                if 'timestamp' in obj[key].columns:
+                    obj[key].index = [pd.Timestamp(t, tz='UTC') for t in obj[key]['timestamp']]
                 obj[key] = obj[key][col_idx]
         else:
             raise ValueError('File type %s not supported', ext)
