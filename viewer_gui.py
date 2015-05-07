@@ -445,6 +445,10 @@ class PandasViewer(QtGui.QMainWindow):
             self.agg_submenu.addAction(action)
         self.agg_mapper.mapped['QString'].connect(self.change_agg)
         style_menu.addMenu(self.agg_submenu)
+        self.strip_zeros = QtGui.QAction(
+            'Strip Zeros', style_menu, checkable=True)
+        self.strip_zeros.triggered.connect(self.change_strip_zeros)
+        style_menu.addAction(self.strip_zeros)
         self.legend_action = QtGui.QAction(
             'Legend', style_menu, checkable=True, checked=True)
         self.legend_action.triggered.connect(self.change_legend)
@@ -479,6 +483,13 @@ class PandasViewer(QtGui.QMainWindow):
         self.df_plot_viewer.legend.set_visible(self.legend_action.isChecked())
         self.df_plot_viewer.draw()
 
+    def change_strip_zeros(self):
+        df = self.df
+        if self.strip_zeros.isChecked():
+            for col, ts in df.iteritems():
+                df.ix[ts == 0, col] = np.nan
+        self.dataframe_changed(df)
+
     def open_file(self):
         self.filepath, _ = QtGui.QFileDialog.getOpenFileName(
             self, 'Select pickle to load', '/Users/davidsimpson/')
@@ -508,6 +519,7 @@ class PandasViewer(QtGui.QMainWindow):
             msg_box.setText(msg)
             msg_box.exec_()
             return
+        self.displayed_df = None
         self.tree_widget.set_tree(self.obj)
 
 
