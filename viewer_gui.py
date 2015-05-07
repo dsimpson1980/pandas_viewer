@@ -418,16 +418,18 @@ class PandasViewer(QtGui.QMainWindow):
         menubar = QtGui.QMenuBar(self)
         action_menu = QtGui.QMenu('Actions')
         menubar.addMenu(action_menu)
-        open_action = QtGui.QAction('Open File', action_menu, shortcut=QtGui.QKeySequence.Open)
+        open_action = QtGui.QAction(
+            'Open File', action_menu, shortcut=QtGui.QKeySequence.Open)
         open_action.triggered.connect(self.open_file)
-        # open_action.setShortcut(['ctrl 0'])
         action_menu.addAction(open_action)
         style_menu = QtGui.QMenu('Style')
         menubar.addMenu(style_menu)
         self.freq_submenu = QtGui.QMenu('Freq')
         self.freq_mapper = QtCore.QSignalMapper(self)
         for freq in ['D', 'H', 'T']:
-            action = QtGui.QAction(freq, self, checkable=True)
+            action = QtGui.QAction(
+                freq, self, checkable=True,
+                shortcut=QtGui.QKeySequence('Ctrl+Shift+%s' % freq))
             self.freq_mapper.setMapping(action, freq)
             action.triggered.connect(self.freq_mapper.map)
             self.freq_submenu.addAction(action)
@@ -435,19 +437,23 @@ class PandasViewer(QtGui.QMainWindow):
         style_menu.addMenu(self.freq_submenu)
         self.agg_submenu = QtGui.QMenu('How')
         self.agg_mapper = QtCore.QSignalMapper(self)
-        for how in ['mean', 'sum', 'last']:
-            action = QtGui.QAction(how, self, checkable=True)
+        for how, key in [('mean', 'M'), ('sum', 'S'), ('last', 'L')]:
+            action = QtGui.QAction(
+                how, self, checkable=True,
+                shortcut=QtGui.QKeySequence('Ctrl+Shift+%s' % key))
             self.agg_mapper.setMapping(action, how)
             action.triggered.connect(self.agg_mapper.map)
             self.agg_submenu.addAction(action)
         self.agg_mapper.mapped['QString'].connect(self.change_agg)
         style_menu.addMenu(self.agg_submenu)
         self.strip_zeros = QtGui.QAction(
-            'Strip Zeros', style_menu, checkable=True)
+            'Strip Zeros', style_menu, checkable=True,
+            shortcut=QtGui.QKeySequence('Ctrl+0'))
         self.strip_zeros.triggered.connect(self.change_strip_zeros)
         style_menu.addAction(self.strip_zeros)
         self.legend_action = QtGui.QAction(
-            'Legend', style_menu, checkable=True, checked=True)
+            'Legend', style_menu, checkable=True, checked=True,
+            shortcut=QtGui.QKeySequence('Ctrl+L'))
         self.legend_action.triggered.connect(self.change_legend)
         style_menu.addAction(self.legend_action)
 
