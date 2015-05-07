@@ -414,13 +414,7 @@ class PandasViewer(QtGui.QMainWindow):
         self.df_plot_viewer.draw()
 
     def init_menu(self):
-        """Initiate the drop down menus for the window
-
-        Parameters
-        ----------
-        window: QtGui.QMainWindow
-            The window to add the menubar to
-        """
+        """Initiate the drop down menus for the window"""
         menubar = QtGui.QMenuBar(self)
         action_menu = QtGui.QMenu('Actions')
         menubar.addMenu(action_menu)
@@ -469,6 +463,13 @@ class PandasViewer(QtGui.QMainWindow):
             self.dataframe_changed(self.df)
 
     def change_agg(self, how):
+        """Change the method of aggregation/resample
+
+        Parameters
+        ----------
+        how: str
+            The method to use for resample parameter how
+        """
         self.agg = how
         for action in self.agg_submenu.actions():
             action.setChecked(action.text() == how)
@@ -484,6 +485,7 @@ class PandasViewer(QtGui.QMainWindow):
         self.df_plot_viewer.draw()
 
     def change_strip_zeros(self):
+        """Strip the zeros from teh displayed data"""
         df = self.df
         if self.strip_zeros.isChecked():
             for col, ts in df.iteritems():
@@ -491,6 +493,7 @@ class PandasViewer(QtGui.QMainWindow):
         self.dataframe_changed(df)
 
     def open_file(self):
+        """Open either a pickle or h5 file"""
         self.filepath, _ = QtGui.QFileDialog.getOpenFileName(
             self, 'Select pickle to load', '/Users/davidsimpson/')
         filename, ext = os.path.splitext(os.path.basename(self.filepath))
