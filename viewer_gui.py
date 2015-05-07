@@ -412,6 +412,9 @@ class PandasViewer(QtGui.QMainWindow):
         self.df = df
         self.displayed_df = self.df if self.freq is None else self.df.resample(
             self.freq, how=self.agg)
+        if self.strip_zeros.isChecked():
+            for col, ts in self.displayed_df.iteritems():
+                self.displayed_df.ix[ts == 0, col] = np.nan
         self.df_viewer.set_dataframe(self.displayed_df)
         self.df_plot_viewer.set_dataframe(self.displayed_df)
         self.df_plot_viewer.draw()
@@ -502,12 +505,8 @@ class PandasViewer(QtGui.QMainWindow):
         self.df_plot_viewer.draw()
 
     def change_strip_zeros(self):
-        """Strip the zeros from teh displayed data"""
-        df = self.df
-        if self.strip_zeros.isChecked():
-            for col, ts in df.iteritems():
-                df.ix[ts == 0, col] = np.nan
-        self.dataframe_changed(df)
+        """Strip the zeros from the displayed data"""
+        self.dataframe_changed(self.df)
 
     def open_file(self, path=os.path.expanduser('~')):
         """Open either a pickle or h5 file"""
