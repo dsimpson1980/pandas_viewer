@@ -20,6 +20,9 @@ from simp_tools import pickling
 # ToDo Add difference plots action
 # ToDo Add difference plots functionality
 # ToDo fix pyinstaller build so that menu items are shown
+# ToDo Add Status in window showing freq, agg, and zeros_stripped
+# ToDo fix open file cancel button (producing error on cancel)
+# ToDo fix bug where plot is not being cleared on loading new file
 
 
 class DataFrameTableView(QtGui.QTableView):
@@ -190,7 +193,7 @@ class DataFramePlotWidget(QtGui.QWidget):
             The dataframe to plot
         """
         self.dataframe = dataframe
-        if dataframe is not None:
+        if not dataframe.empty:
             self.subplot.clear()
             self.subplot.plot_date(dataframe.index, dataframe.values, '-')
             legend = self.subplot.legend(self.dataframe.columns)
@@ -374,6 +377,8 @@ class PandasViewer(QtGui.QMainWindow):
         self.freq = None
         self.agg = None
         self.filepath = None
+        self.df = pd.DataFrame()
+        self.displayed_df = pd.DataFrame()
         window = QtGui.QWidget()
         self.setCentralWidget(window)
         main_layout = QtGui.QVBoxLayout()
@@ -392,10 +397,8 @@ class PandasViewer(QtGui.QMainWindow):
         self.df_viewer = DataFrameTableView(None)
         left_layout.addWidget(self.df_viewer)
 
-        self.df_plot_viewer = DataFramePlotWidget()
+        self.df_plot_viewer = DataFramePlotWidget(self.df)
         splitter.addWidget(self.df_plot_viewer)
-        self.df = None
-        self.displayed_df = None
         self.init_menu()
 
     def dataframe_changed(self, df):
@@ -456,6 +459,11 @@ class PandasViewer(QtGui.QMainWindow):
             shortcut=QtGui.QKeySequence('Ctrl+L'))
         self.legend_action.triggered.connect(self.change_legend)
         style_menu.addAction(self.legend_action)
+        if os.path.exists('/md'):
+            open_archive = QtGui.QAction('Open Archive', action_menu,
+                                         shortcut=QtGui.QKeySequence('Ctrl+A'))
+            open_archive.triggered.connect(lambda: self.open_file('/md'))
+            action_menu.addAction(open_archive)
 
     def change_freq(self, freq):
         """Resample the original pd.DataFrame to frequency freq
@@ -501,10 +509,10 @@ class PandasViewer(QtGui.QMainWindow):
                 df.ix[ts == 0, col] = np.nan
         self.dataframe_changed(df)
 
-    def open_file(self):
+    def open_file(self, path=os.path.expanduser('~')):
         """Open either a pickle or h5 file"""
         self.filepath, _ = QtGui.QFileDialog.getOpenFileName(
-            self, 'Select pickle to load', '/Users/davidsimpson/')
+            self, 'Select pickle to load', path)
         filename, ext = os.path.splitext(os.path.basename(self.filepath))
         if ext == '.pickle':
             obj = pickling.load(self.filepath)
@@ -532,8 +540,18 @@ class PandasViewer(QtGui.QMainWindow):
             msg_box.setText(msg)
             msg_box.exec_()
             return
-        self.displayed_df = None
+        self.reset_all()
         self.tree_widget.set_tree(self.obj)
+        self.dataframe_changed(self.df)
+
+    def reset_all(self):
+        [action.setChecked(False) for action in self.freq_submenu.actions()]
+        [action.setChecked(False) for action in self.agg_submenu.actions()]
+        self.legend_action.setChecked(True)
+        self.freq = None
+        self.agg = None
+        self.df = pd.DataFrame()
+        self.displayed_df = pd.DataFrame()
 
 
 def main():
