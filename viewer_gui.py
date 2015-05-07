@@ -372,6 +372,7 @@ class PandasViewer(QtGui.QMainWindow):
         if isinstance(obj, (pd.Series, pd.DataFrame, pd.Panel)):
             obj = {str(type(obj)): obj}
         self.freq = None
+        self.agg = None
         self.filepath = None
         window = QtGui.QWidget()
         self.setCentralWidget(window)
@@ -406,7 +407,8 @@ class PandasViewer(QtGui.QMainWindow):
             The dataframe to set
         """
         self.df = df
-        self.displayed_df = self.df if self.freq is None else self.df.resample(self.freq)
+        self.displayed_df = self.df if self.freq is None else self.df.resample(
+            self.freq, how=self.agg)
         self.df_viewer.set_dataframe(self.displayed_df)
         self.df_plot_viewer.set_dataframe(self.displayed_df)
         self.df_plot_viewer.draw()
@@ -426,14 +428,23 @@ class PandasViewer(QtGui.QMainWindow):
         style_menu = QtGui.QMenu('Style')
         menubar.addMenu(style_menu)
         self.freq_submenu = QtGui.QMenu('Freq')
-        self.mapper = QtCore.QSignalMapper(self)
+        self.freq_mapper = QtCore.QSignalMapper(self)
         for freq in ['D', 'H', 'T']:
             action = QtGui.QAction(freq, self, checkable=True)
-            self.mapper.setMapping(action, freq)
-            action.triggered.connect(self.mapper.map)
+            self.freq_mapper.setMapping(action, freq)
+            action.triggered.connect(self.freq_mapper.map)
             self.freq_submenu.addAction(action)
-        self.mapper.mapped['QString'].connect(self.change_freq)
+        self.freq_mapper.mapped['QString'].connect(self.change_freq)
         style_menu.addMenu(self.freq_submenu)
+        self.agg_submenu = QtGui.QMenu('How')
+        self.agg_mapper = QtCore.QSignalMapper(self)
+        for how in ['mean', 'sum', 'last']:
+            action = QtGui.QAction(how, self, checkable=True)
+            self.agg_mapper.setMapping(action, how)
+            action.triggered.connect(self.agg_mapper.map)
+            self.agg_submenu.addAction(action)
+        self.agg_mapper.mapped['QString'].connect(self.change_agg)
+        style_menu.addMenu(self.agg_submenu)
         self.legend_action = QtGui.QAction(
             'Legend', style_menu, checkable=True, checked=True)
         self.legend_action.triggered.connect(self.change_legend)
@@ -450,6 +461,13 @@ class PandasViewer(QtGui.QMainWindow):
         self.freq = freq
         for action in self.freq_submenu.actions():
             action.setChecked(action.text() == freq)
+        if self.df is not None:
+            self.dataframe_changed(self.df)
+
+    def change_agg(self, how):
+        self.agg = how
+        for action in self.agg_submenu.actions():
+            action.setChecked(action.text() == how)
         if self.df is not None:
             self.dataframe_changed(self.df)
 
