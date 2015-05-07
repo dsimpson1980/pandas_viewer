@@ -350,8 +350,8 @@ class PandasTreeWidget(QtGui.QTreeWidget):
 class PandasViewer(QtGui.QMainWindow):
     """Main window for the GUI"""
 
-    def __init__(self, obj):
-        """
+    def __init__(self, obj=None):
+        """Initiate pandas viewer
 
         Parameters
         ----------
@@ -370,6 +370,7 @@ class PandasViewer(QtGui.QMainWindow):
         >>> PandasViewer(dataframe) #doctest: +ELLIPSIS
         <viewer_gui.PandasViewer object at ...>
         """
+        if not obj: obj = {}
         QtGui.QMainWindow.__init__(self)
         if isinstance(obj, (pd.Series, pd.DataFrame, pd.Panel)):
             obj = {str(type(obj)): obj}
@@ -558,12 +559,7 @@ class PandasViewer(QtGui.QMainWindow):
 def main():
     """Main method for the app"""
     app = QtGui.QApplication(sys.argv)
-    #ToDo this is just a random dataframe for testing
-    timestamps = pd.date_range('1-Apr-14', '30-Apr-14', freq='H')
-    ts = pd.Series(np.random.rand(len(timestamps)), timestamps)
-    dataframe = pd.DataFrame(
-        np.random.rand(len(timestamps), 2), index=timestamps)
-    pandas_viewer = PandasViewer(dict(ts=ts, df=dataframe))
+    pandas_viewer = PandasViewer()
     pandas_viewer.show()
     app.exec_()
 
