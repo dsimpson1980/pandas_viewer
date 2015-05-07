@@ -21,7 +21,6 @@ from simp_tools import pickling
 # ToDo Add difference plots functionality
 # ToDo fix pyinstaller build so that menu items are shown
 # ToDo Add Status in window showing freq, agg, and zeros_stripped
-# ToDo fix open file cancel button (producing error on cancel)
 # ToDo fix bug where plot is not being cleared on loading new file
 
 
@@ -514,6 +513,8 @@ class PandasViewer(QtGui.QMainWindow):
         self.filepath, _ = QtGui.QFileDialog.getOpenFileName(
             self, 'Select pickle to load', path)
         filename, ext = os.path.splitext(os.path.basename(self.filepath))
+        if filename == '':
+            return
         if ext == '.pickle':
             obj = pickling.load(self.filepath)
         elif ext == '.h5':
