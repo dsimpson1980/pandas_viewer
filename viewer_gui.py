@@ -1,7 +1,8 @@
 from PySide import QtGui, QtCore
-import pandas
-import numpy
+import pandas as pd
+import numpy as np
 import sys
+import os
 
 import matplotlib
 
@@ -23,11 +24,11 @@ from simp_tools import pickling
 class DataFrameTableView(QtGui.QTableView):
 
     def __init__(self, df):
-        """Initiate the TableView with pandas.DataFrame df
+        """Initiate the TableView with pd.DataFrame df
 
         Parameters
         ----------
-        df: pandas.DataFrame
+        df: pd.DataFrame
             The DataFrame to display in the TableView
 
         Returns
@@ -45,8 +46,8 @@ class DataFrameTableView(QtGui.QTableView):
         Parameters
         ----------
 
-        df: pandas.DataFrame
-            The pandas.DataFrame to set the property
+        df: pd.DataFrame
+            The pd.DataFrame to set the property
         """
         table_model = DataFrameTableModel(self, df)
         self.df = df
@@ -58,14 +59,14 @@ class DataFrameTableModel(QtCore.QAbstractTableModel):
 
     def __init__(self, parent, df):
         """Initiate the Table Model from a parent object, that should be a
-        QtGui.QTableView and an initial pandas.DataFrame, df
+        QtGui.QTableView and an initial pd.DataFrame, df
 
         Parameters
         ----------
         parent: QtGui.QTableView
             The parent object for the the instance
-        df: pandas.DataFrame
-            The pandas.DataFrame used to initialise the model
+        df: pd.DataFrame
+            The pd.DataFrame used to initialise the model
 
         Returns
         -------
@@ -148,7 +149,7 @@ class DataFrameTableModel(QtCore.QAbstractTableModel):
 
 
 class DataFramePlotWidget(QtGui.QWidget):
-    """QWidget to hold a matplotlib plot of the pandas.DataFrame
+    """QWidget to hold a matplotlib plot of the pd.DataFrame
 
     """
     def __init__(self, df=None):
@@ -157,7 +158,7 @@ class DataFramePlotWidget(QtGui.QWidget):
 
         Parameters
         ----------
-        df: pandas.DataFrame, optional
+        df: pd.DataFrame, optional
             The dataframe used to initialise the plot, defaults to None
 
         Returns
@@ -180,11 +181,11 @@ class DataFramePlotWidget(QtGui.QWidget):
         self.set_dataframe(df)
 
     def set_dataframe(self, dataframe):
-        """Set the pandas.DataFrame for the widget and plot it on the subplot
+        """Set the pd.DataFrame for the widget and plot it on the subplot
 
         Parameters
         ----------
-        dataframe: pandas.DataFrame
+        dataframe: pd.DataFrame
             The dataframe to plot
         """
         self.dataframe = dataframe
@@ -225,7 +226,7 @@ class PandasTreeWidget(QtGui.QTreeWidget):
 
     """
 
-    selection_made = QtCore.Signal((pandas.DataFrame, ))
+    selection_made = QtCore.Signal((pd.DataFrame, ))
 
     def __init__(self, parent=None, obj=None):
         """Initiate the tree structure with the obj
@@ -260,16 +261,16 @@ class PandasTreeWidget(QtGui.QTreeWidget):
         self.obj = obj
         root = self.invisibleRootItem()
         for key, value in obj.items():
-            if isinstance(value, pandas.Series):
+            if isinstance(value, pd.Series):
                 leaf = PandasTreeWidgetItem(key)
                 root.addChild(leaf)
-            if isinstance(value, pandas.DataFrame):
+            if isinstance(value, pd.DataFrame):
                 twig = PandasTreeWidgetItem(key, None)
                 root.addChild(twig)
                 for column in value.columns:
                     leaf = PandasTreeWidgetItem(key, column)
                     twig.addChild(leaf)
-            if isinstance(value, pandas.Panel):
+            if isinstance(value, pd.Panel):
                 branch = PandasTreeWidgetItem(key, None, None)
                 root.addChild(branch)
                 for mj in value.major_axis:
@@ -299,16 +300,16 @@ class PandasTreeWidget(QtGui.QTreeWidget):
             keys_for_item = item.keys
             non_none_keys = [k for k in keys_for_item if k is not None]
             if len(keys_for_item) == 1:
-                # pandas.Series
+                # pd.Series
                 name = keys_for_item[0]
                 obj = self.obj[name]
-                if isinstance(obj, pandas.Series):
+                if isinstance(obj, pd.Series):
                     result[name] = self.obj[name]
-                elif isinstance(obj, pandas.DataFrame):
+                elif isinstance(obj, pd.DataFrame):
                     for col_name, ts in obj.iteritems():
                         result['%s[%s]' % (name, col_name)] = ts
             elif len(keys_for_item) == 2:
-                # pandas.DataFrame
+                # pd.DataFrame
                 df_name = keys_for_item[0]
                 df = self.obj[df_name]
                 if len(non_none_keys) == 2:
@@ -320,12 +321,12 @@ class PandasTreeWidget(QtGui.QTreeWidget):
                 else:
                     raise ValueError('len of non_keys %s not covered' % len(non_none_keys))
             elif len(keys_for_item) == 3:
-                # pandas.Panel selection
+                # pd.Panel selection
                 pl = self.obj[keys_for_item[0]]
                 pl_name, mj, mi = keys_for_item
                 if mj is None:
                     # whole panel selection
-                    # ToDo submit bug report for doctsring pandas.Panel.iteritems()
+                    # ToDo submit bug report for doctsring pd.Panel.iteritems()
                     for mj in pl.major_axis:
                         for mi in pl.minor_axis:
                             result['%s[:, %s, %s]' % (pl_name, mj, mi
@@ -339,7 +340,7 @@ class PandasTreeWidget(QtGui.QTreeWidget):
                     result['%s[:, %s, %s]' % tuple(keys_for_item)] = pl.ix[:, mj, mi]
             else:
                 raise ValueError('len of keys %s is not covered' % len(keys_for_item))
-        result = pandas.DataFrame(result)
+        result = pd.DataFrame(result)
         self.selection_made.emit(result)
 
 
@@ -351,7 +352,7 @@ class PandasViewer(QtGui.QMainWindow):
 
         Parameters
         ----------
-        obj: pandas.Series, pandas.DataFrame, pandas.Panel, dict
+        obj: pd.Series, pd.DataFrame, pd.Panel, dict
             The obj to iterate through to allow selection
 
         Returns
@@ -360,14 +361,14 @@ class PandasViewer(QtGui.QMainWindow):
 
         Examples
         --------
-        >>> timestamps = pandas.date_range('1-Apr-14', '30-Apr-14')
-        >>> dataframe = pandas.DataFrame(numpy.random.rand(len(timestamps), 2), index=timestamps)
+        >>> timestamps = pd.date_range('1-Apr-14', '30-Apr-14')
+        >>> dataframe = pd.DataFrame(np.random.rand(len(timestamps), 2), index=timestamps)
         >>> app = QtGui.QApplication(sys.argv)
         >>> PandasViewer(dataframe) #doctest: +ELLIPSIS
         <viewer_gui.PandasViewer object at ...>
         """
         QtGui.QMainWindow.__init__(self)
-        if isinstance(obj, (pandas.Series, pandas.DataFrame, pandas.Panel)):
+        if isinstance(obj, (pd.Series, pd.DataFrame, pd.Panel)):
             obj = {str(type(obj)): obj}
         self.freq = None
         self.filepath = None
@@ -400,7 +401,7 @@ class PandasViewer(QtGui.QMainWindow):
 
         Parameters
         ----------
-        df: pandas.DataFrame
+        df: pd.DataFrame
             The dataframe to set
         """
         self.df = df
@@ -438,7 +439,7 @@ class PandasViewer(QtGui.QMainWindow):
         style_menu.addAction(self.legend_action)
 
     def change_freq(self, freq):
-        """Resample the original pandas.DataFrame to frequency freq
+        """Resample the original pd.DataFrame to frequency freq
 
         Parameters
         ----------
@@ -461,8 +462,28 @@ class PandasViewer(QtGui.QMainWindow):
 
     def open_file(self):
         self.filepath, _ = QtGui.QFileDialog.getOpenFileName(
-            self, 'Select pickle to load')
-        self.obj = pickling.load(self.filepath)
+            self, 'Select pickle to load', '/Users/davidsimpson/')
+        filename, ext = os.path.splitext(os.path.basename(self.filepath))
+        if ext == '.pickle':
+            obj = pickling.load(self.filepath)
+        elif ext == '.h5':
+            obj = pd.read_hdf(self.filepath, filename)
+            col_idx = [k for k, d in obj.dtypes.iteritems() if d.type == np.float64]
+            obj = obj[col_idx]
+        else:
+            raise ValueError('File type %s not supported', ext)
+        if isinstance(obj, dict):
+            self.obj = obj
+        elif isinstance(obj, pd.core.generic.NDFrame):
+            obj_name = os.path.splitext(os.path.basename(self.filepath))[0]
+            self.obj = {obj_name: obj}
+        else:
+            msg_box = QtGui.QMessageBox()
+            msg = 'Pickle file should contain a dict of pandas objects or a '
+            msg += 'pandas object\n Object in pickle is %s' % type(obj)
+            msg_box.setText(msg)
+            msg_box.exec_()
+            return
         self.tree_widget.set_tree(self.obj)
 
 
@@ -470,10 +491,10 @@ def main():
     """Main method for the app"""
     app = QtGui.QApplication(sys.argv)
     #ToDo this is just a random dataframe for testing
-    timestamps = pandas.date_range('1-Apr-14', '30-Apr-14', freq='H')
-    ts = pandas.Series(numpy.random.rand(len(timestamps)), timestamps)
-    dataframe = pandas.DataFrame(
-        numpy.random.rand(len(timestamps), 2), index=timestamps)
+    timestamps = pd.date_range('1-Apr-14', '30-Apr-14', freq='H')
+    ts = pd.Series(np.random.rand(len(timestamps)), timestamps)
+    dataframe = pd.DataFrame(
+        np.random.rand(len(timestamps), 2), index=timestamps)
     pandas_viewer = PandasViewer(dict(ts=ts, df=dataframe))
     pandas_viewer.show()
     app.exec_()
