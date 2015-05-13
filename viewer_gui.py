@@ -263,7 +263,9 @@ class PandasTreeWidget(QtGui.QTreeWidget):
         self.clear()
         self.obj = obj
         root = self.invisibleRootItem()
-        for key, value in obj.items():
+        idx = obj.items()
+        idx.sort()
+        for key, value in idx:
             if isinstance(value, pd.Series):
                 leaf = PandasTreeWidgetItem(key)
                 root.addChild(leaf)
@@ -467,6 +469,24 @@ class PandasViewer(QtGui.QMainWindow):
                                          shortcut=QtGui.QKeySequence('Ctrl+A'))
             open_archive.triggered.connect(lambda: self.open_file('/md'))
             action_menu.addAction(open_archive)
+        self.collapse_action = QtGui.QAction(
+            'Collapse All', action_menu,
+            shortcut=QtGui.QKeySequence('Ctrl+Shift+C'))
+        self.collapse_action.triggered.connect(self.tree_widget.collapseAll)
+        action_menu.addAction(self.collapse_action)
+        self.expand_all = QtGui.QAction(
+            'Expand All', action_menu,
+            shortcut=QtGui.QKeySequence('Ctrl+Shift+E'))
+        self.expand_all.triggered.connect(self.tree_widget.expandAll)
+        action_menu.addAction(self.expand_all)
+
+    @staticmethod
+    def action(*args, **kwargs):
+        action = QtGui.QAction(*args, **kwargs)
+        event = kwargs.pop('triggered', None)
+        if event is not None:
+            action.triggered.connect(event)
+        return action
 
     def change_freq(self, freq):
         """Resample the original pd.DataFrame to frequency freq
