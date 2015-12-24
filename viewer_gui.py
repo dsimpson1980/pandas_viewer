@@ -434,10 +434,10 @@ class PandasViewer(QtGui.QMainWindow):
         menubar.addMenu(style_menu)
         self.freq_submenu = QtGui.QMenu('Freq')
         self.freq_mapper = QtCore.QSignalMapper(self)
-        for freq in ['D', 'H', 'T']:
+        for key, freq in dict(T='30T', H='H', E='4H', D='D', M='M').iteritems():
             action = QtGui.QAction(
                 freq, self, checkable=True,
-                shortcut=QtGui.QKeySequence('Ctrl+Shift+%s' % freq))
+                shortcut=QtGui.QKeySequence('Ctrl+Shift+%s' % key))
             self.freq_mapper.setMapping(action, freq)
             action.triggered.connect(self.freq_mapper.map)
             self.freq_submenu.addAction(action)
