@@ -171,6 +171,7 @@ class DataFramePlotWidget(QtGui.QWidget):
         QtGui.QWidget.__init__(self)
         self.fig = Figure()
         self.canvas = FigureCanvas(self.fig)
+        self.chart_type = 'line'
         self.canvas.setParent(self)
         self.toolbar = NavigationToolbar(self.canvas, self)
 
@@ -192,9 +193,11 @@ class DataFramePlotWidget(QtGui.QWidget):
             The dataframe to plot
         """
         self.dataframe = dataframe
+        values = dataframe.cumsum(
+            axis=1).values if self.chart_type == 'stack' else dataframe.values
         if not dataframe.empty:
             self.subplot.clear()
-            self.subplot.plot_date(dataframe.index, dataframe.values, '-')
+            self.subplot.plot_date(dataframe.index, values, '-')
             legend = self.subplot.legend(self.dataframe.columns)
             legend.set_visible(self.legend.get_visible())
             self.legend = legend
@@ -453,6 +456,19 @@ class PandasViewer(QtGui.QMainWindow):
             action.triggered.connect(self.agg_mapper.map)
             self.agg_submenu.addAction(action)
         self.agg_mapper.mapped['QString'].connect(self.change_agg)
+
+        self.chart_type_menu = QtGui.QMenu('Chart Type')
+        self.chart_type_mapper = QtCore.QSignalMapper(self)
+        for key, chart_type in dict(L='line', R='stack').iteritems():
+            action = QtGui.QAction(
+                chart_type, self, checkable=True,
+                shortcut=QtGui.QKeySequence('Ctrl+Shift+{}'.format(key)))
+            self.chart_type_mapper.setMapping(action, chart_type)
+            action.triggered.connect(self.chart_type_mapper.map)
+            self.chart_type_menu.addAction(action)
+        self.chart_type_mapper.mapped['QString'].connect(self.change_chart)
+        style_menu.addMenu(self.chart_type_menu)
+
         style_menu.addMenu(self.agg_submenu)
         self.strip_zeros = QtGui.QAction(
             'Strip Zeros', style_menu, checkable=True,
@@ -513,6 +529,13 @@ class PandasViewer(QtGui.QMainWindow):
         self.agg = how
         for action in self.agg_submenu.actions():
             action.setChecked(action.text() == how)
+        if self.df is not None:
+            self.dataframe_changed(self.df)
+
+    def change_chart(self, chart_type):
+        self.df_plot_viewer.chart_type = chart_type
+        for action in self.chart_type_menu.actions():
+            action.setChecked(action.text() == chart_type)
         if self.df is not None:
             self.dataframe_changed(self.df)
 
