@@ -5,6 +5,7 @@ import sys
 import os
 import h5py
 import matplotlib
+import functools
 
 matplotlib.rcParams['backend.qt4'] = 'PySide'
 
@@ -21,6 +22,16 @@ from simp_tools import pickling
 # ToDo fix pyinstaller build so that menu items are shown
 # ToDo Add Status in window showing freq, agg, and zeros_stripped
 # ToDo fix bug where plot is not being cleared on loading new file
+
+
+def update_dataframe(obj):
+    @functools.wraps(obj)
+    def func(*args, **kwargs):
+        self = args[0]
+        result = obj(*args, **kwargs)
+        self.dataframe_changed(self.df)
+        return result
+    return func
 
 
 class DataFrameTableView(QtGui.QTableView):
@@ -333,7 +344,7 @@ class PandasTreeWidget(QtGui.QTreeWidget):
                 pl_name, mj, mi = keys_for_item
                 if mj is None:
                     # whole panel selection
-                    # ToDo submit bug report for doctsring pd.Panel.iteritems()
+                    # ToDo submit bug report for doctstring pd.Panel.iteritems()
                     for mj in pl.major_axis:
                         for mi in pl.minor_axis:
                             result['%s[:, %s, %s]' % (pl_name, mj, mi
@@ -374,7 +385,8 @@ class PandasViewer(QtGui.QMainWindow):
         >>> PandasViewer(dataframe) #doctest: +ELLIPSIS
         <viewer_gui.PandasViewer object at ...>
         """
-        if not obj: obj = {}
+        if not obj:
+            obj = {}
         QtGui.QMainWindow.__init__(self)
         if isinstance(obj, (pd.Series, pd.DataFrame, pd.Panel)):
             obj = {str(type(obj)): obj}
@@ -404,30 +416,6 @@ class PandasViewer(QtGui.QMainWindow):
         self.df_plot_viewer = DataFramePlotWidget(self.df)
         splitter.addWidget(self.df_plot_viewer)
         self.init_menu()
-
-    def dataframe_changed(self, df):
-        """Set the dataframe in the dataframe viewer to df
-
-        Parameters
-        ----------
-        df: pd.DataFrame
-            The dataframe to set
-        """
-        self.df = df
-        self.displayed_df = self.df if self.freq is None else self.df.resample(
-            self.freq, how=self.agg)
-        if self.strip_zeros.isChecked():
-            for col, ts in self.displayed_df.iteritems():
-                self.displayed_df.ix[ts == 0, col] = np.nan
-        self.df_viewer.set_dataframe(self.displayed_df)
-        self.df_plot_viewer.set_dataframe(self.displayed_df)
-        self.df_plot_viewer.draw()
-
-    def save_to_csv(self):
-        """Save the contents of the currently selected DataFrame to a csv file
-        """
-        filepath, _ = QtGui.QFileDialog.getSaveFileName(self, 'Enter filename')
-        self.df_plot_viewer.dataframe.to_csv(filepath)
 
     def init_action_menu(self):
         self.action_menu = QtGui.QMenu('Actions')
@@ -472,6 +460,30 @@ class PandasViewer(QtGui.QMainWindow):
         self.init_data_menu()
         self.init_style_menu()
 
+    def dataframe_changed(self, df):
+        """Set the dataframe in the dataframe viewer to df
+
+        Parameters
+        ----------
+        df: pd.DataFrame
+            The dataframe to set
+        """
+        self.df = df
+        self.displayed_df = self.df if self.freq is None else self.df.resample(
+            self.freq, how=self.agg)
+        if self.strip_zeros.isChecked():
+            for col, ts in self.displayed_df.iteritems():
+                self.displayed_df.ix[ts == 0, col] = np.nan
+        self.df_viewer.set_dataframe(self.displayed_df)
+        self.df_plot_viewer.set_dataframe(self.displayed_df)
+        self.df_plot_viewer.draw()
+
+    def save_to_csv(self):
+        """Save the contents of the currently selected DataFrame to a csv file
+        """
+        filepath, _ = QtGui.QFileDialog.getSaveFileName(self, 'Enter filename')
+        self.df_plot_viewer.dataframe.to_csv(filepath)
+
     @staticmethod
     def action(*args, **kwargs):
         action = QtGui.QAction(*args, **kwargs)
@@ -480,6 +492,7 @@ class PandasViewer(QtGui.QMainWindow):
             action.triggered.connect(event)
         return action
 
+    @update_dataframe
     def change_freq(self, freq):
         """Resample the original pd.DataFrame to frequency freq
 
@@ -491,9 +504,8 @@ class PandasViewer(QtGui.QMainWindow):
         self.freq = freq
         for action in self.freq_submenu.actions():
             action.setChecked(action.text() == freq)
-        if self.df is not None:
-            self.dataframe_changed(self.df)
 
+    @update_dataframe
     def change_agg(self, how):
         """Change the method of aggregation/resample
 
@@ -505,15 +517,12 @@ class PandasViewer(QtGui.QMainWindow):
         self.agg = how
         for action in self.how_submenu.actions():
             action.setChecked(action.text() == how)
-        if self.df is not None:
-            self.dataframe_changed(self.df)
 
+    @update_dataframe
     def change_chart(self, chart_type):
         self.df_plot_viewer.chart_type = chart_type
         for action in self.chart_type_submenu.actions():
             action.setChecked(action.text() == chart_type)
-        if self.df is not None:
-            self.dataframe_changed(self.df)
 
     def change_legend(self):
         """Set the visibility of the subplot legend to match the checked status
@@ -523,10 +532,11 @@ class PandasViewer(QtGui.QMainWindow):
         self.df_plot_viewer.legend.set_visible(self.legend_action.isChecked())
         self.df_plot_viewer.draw()
 
+    @update_dataframe
     def change_strip_zeros(self):
-        """Strip the zeros from the displayed data"""
-        self.dataframe_changed(self.df)
+        pass
 
+    @update_dataframe
     def open_file(self, path=os.path.expanduser('~')):
         """Open either a pickle or h5 file"""
         self.filepath, _ = QtGui.QFileDialog.getOpenFileName(
@@ -562,7 +572,6 @@ class PandasViewer(QtGui.QMainWindow):
             return
         self.reset_all()
         self.tree_widget.set_tree(self.obj)
-        self.dataframe_changed(self.df)
 
     def reset_all(self):
         [action.setChecked(False) for action in self.freq_submenu.actions()]
