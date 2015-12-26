@@ -4,7 +4,6 @@ import numpy as np
 import sys
 import os
 import h5py
-
 import matplotlib
 
 matplotlib.rcParams['backend.qt4'] = 'PySide'
@@ -424,6 +423,12 @@ class PandasViewer(QtGui.QMainWindow):
         self.df_plot_viewer.set_dataframe(self.displayed_df)
         self.df_plot_viewer.draw()
 
+    def save_to_csv(self):
+        """Save the contents of the currently selected DataFrame to a csv file
+        """
+        filepath, _ = QtGui.QFileDialog.getSaveFileName(self, 'Enter filename')
+        self.df_plot_viewer.dataframe.to_csv(filepath)
+
     def init_menu(self):
         """Initiate the drop down menus for the window"""
         menubar = QtGui.QMenuBar(self)
@@ -433,6 +438,13 @@ class PandasViewer(QtGui.QMainWindow):
             'Open File', action_menu, shortcut=QtGui.QKeySequence.Open)
         open_action.triggered.connect(self.open_file)
         action_menu.addAction(open_action)
+
+        data_menu = QtGui.QMenu('Data')
+        menubar.addMenu(data_menu)
+        save_to_csv = QtGui.QAction(
+            'Save to csv', data_menu, shortcut=QtGui.QKeySequence.Save)
+        save_to_csv.triggered.connect(self.save_to_csv)
+        data_menu.addAction(save_to_csv)
         style_menu = QtGui.QMenu('Style')
         menubar.addMenu(style_menu)
         self.freq_submenu = QtGui.QMenu('Freq')
@@ -596,6 +608,7 @@ class PandasViewer(QtGui.QMainWindow):
         self.agg = None
         self.df = pd.DataFrame()
         self.displayed_df = pd.DataFrame()
+
 
 
 def main():
