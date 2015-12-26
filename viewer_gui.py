@@ -429,84 +429,48 @@ class PandasViewer(QtGui.QMainWindow):
         filepath, _ = QtGui.QFileDialog.getSaveFileName(self, 'Enter filename')
         self.df_plot_viewer.dataframe.to_csv(filepath)
 
+    def init_action_menu(self):
+        self.action_menu = QtGui.QMenu('Actions')
+        self.menubar.addMenu(self.action_menu)
+        self._create_action(self.action_menu, 'open', 'Open',
+                           QtGui.QKeySequence.Open, self.open_file)
+        if os.path.exists('/md'):
+            self._create_action(self.action_menu, 'open_archive', 'Open Archive',
+                                'Ctrl+A', lambda: self.open_file('/md'))
+        self._create_action(self.action_menu, 'collapse_action', 'Collapse All',
+                            'Ctrl+Shift+C', self.tree_widget.collapseAll)
+        self._create_action(self.action_menu, 'expand_all', 'Expand All',
+                            'Ctrl+Shift+E', self.tree_widget.expandAll)
+
+    def init_data_menu(self):
+        data_menu = QtGui.QMenu('Data')
+        self.menubar.addMenu(data_menu)
+        self._create_action(data_menu, 'save_to_csv', 'Save to csv',
+                           QtGui.QKeySequence.Save, self.save_to_csv)
+
+    def init_style_menu(self):
+        self.style_menu = QtGui.QMenu('Style')
+        self.menubar.addMenu(self.style_menu)
+        self._create_submenu(
+            self.style_menu, 'freq', dict(T='30T', H='H', F='4H', D='D', M='M'),
+            self.change_freq)
+        self._create_submenu(
+            self.style_menu, 'how', dict(W='mean', S='sum', L='last'),
+            self.change_agg)
+        self._create_submenu(
+            self.style_menu, 'chart_type', dict(L='line', R='stack'),
+            self.change_chart)
+        self._create_action(self.style_menu, 'strip_zeros', 'Strip Zeros',
+                            'Ctrl+0', self.change_strip_zeros, checkable=True)
+        self._create_action(self.style_menu, 'legend_action', 'Legend',
+                            'Ctrl+L', self.change_legend, checkable=True)
+
     def init_menu(self):
         """Initiate the drop down menus for the window"""
-        menubar = QtGui.QMenuBar(self)
-        action_menu = QtGui.QMenu('Actions')
-        menubar.addMenu(action_menu)
-        open_action = QtGui.QAction(
-            'Open File', action_menu, shortcut=QtGui.QKeySequence.Open)
-        open_action.triggered.connect(self.open_file)
-        action_menu.addAction(open_action)
-
-        data_menu = QtGui.QMenu('Data')
-        menubar.addMenu(data_menu)
-        save_to_csv = QtGui.QAction(
-            'Save to csv', data_menu, shortcut=QtGui.QKeySequence.Save)
-        save_to_csv.triggered.connect(self.save_to_csv)
-        data_menu.addAction(save_to_csv)
-        style_menu = QtGui.QMenu('Style')
-        menubar.addMenu(style_menu)
-        self.freq_submenu = QtGui.QMenu('Freq')
-        self.freq_mapper = QtCore.QSignalMapper(self)
-        for key, freq in dict(T='30T', H='H', E='4H', D='D', M='M').iteritems():
-            action = QtGui.QAction(
-                freq, self, checkable=True,
-                shortcut=QtGui.QKeySequence('Ctrl+Shift+%s' % key))
-            self.freq_mapper.setMapping(action, freq)
-            action.triggered.connect(self.freq_mapper.map)
-            self.freq_submenu.addAction(action)
-        self.freq_mapper.mapped['QString'].connect(self.change_freq)
-        style_menu.addMenu(self.freq_submenu)
-        self.agg_submenu = QtGui.QMenu('How')
-        self.agg_mapper = QtCore.QSignalMapper(self)
-        for how, key in [('mean', 'M'), ('sum', 'S'), ('last', 'L')]:
-            action = QtGui.QAction(
-                how, self, checkable=True,
-                shortcut=QtGui.QKeySequence('Ctrl+Shift+%s' % key))
-            self.agg_mapper.setMapping(action, how)
-            action.triggered.connect(self.agg_mapper.map)
-            self.agg_submenu.addAction(action)
-        self.agg_mapper.mapped['QString'].connect(self.change_agg)
-
-        self.chart_type_menu = QtGui.QMenu('Chart Type')
-        self.chart_type_mapper = QtCore.QSignalMapper(self)
-        for key, chart_type in dict(L='line', R='stack').iteritems():
-            action = QtGui.QAction(
-                chart_type, self, checkable=True,
-                shortcut=QtGui.QKeySequence('Ctrl+Shift+{}'.format(key)))
-            self.chart_type_mapper.setMapping(action, chart_type)
-            action.triggered.connect(self.chart_type_mapper.map)
-            self.chart_type_menu.addAction(action)
-        self.chart_type_mapper.mapped['QString'].connect(self.change_chart)
-        style_menu.addMenu(self.chart_type_menu)
-
-        style_menu.addMenu(self.agg_submenu)
-        self.strip_zeros = QtGui.QAction(
-            'Strip Zeros', style_menu, checkable=True,
-            shortcut=QtGui.QKeySequence('Ctrl+0'))
-        self.strip_zeros.triggered.connect(self.change_strip_zeros)
-        style_menu.addAction(self.strip_zeros)
-        self.legend_action = QtGui.QAction(
-            'Legend', style_menu, checkable=True, checked=True,
-            shortcut=QtGui.QKeySequence('Ctrl+L'))
-        self.legend_action.triggered.connect(self.change_legend)
-        style_menu.addAction(self.legend_action)
-        if os.path.exists('/md'):
-            open_archive = QtGui.QAction('Open Archive', action_menu,
-                                         shortcut=QtGui.QKeySequence('Ctrl+A'))
-            open_archive.triggered.connect(lambda: self.open_file('/md'))
-            action_menu.addAction(open_archive)
-        self.collapse_action = QtGui.QAction(
-            'Collapse All', action_menu,
-            shortcut=QtGui.QKeySequence('Ctrl+Shift+C'))
-        self.collapse_action.triggered.connect(self.tree_widget.collapseAll)
-        action_menu.addAction(self.collapse_action)
-        self.expand_all = QtGui.QAction(
-            'Expand All', action_menu,
-            shortcut=QtGui.QKeySequence('Ctrl+Shift+E'))
-        self.expand_all.triggered.connect(self.tree_widget.expandAll)
-        action_menu.addAction(self.expand_all)
+        self.menubar = QtGui.QMenuBar(self)
+        self.init_action_menu()
+        self.init_data_menu()
+        self.init_style_menu()
 
     @staticmethod
     def action(*args, **kwargs):
@@ -539,14 +503,14 @@ class PandasViewer(QtGui.QMainWindow):
             The method to use for resample parameter how
         """
         self.agg = how
-        for action in self.agg_submenu.actions():
+        for action in self.how_submenu.actions():
             action.setChecked(action.text() == how)
         if self.df is not None:
             self.dataframe_changed(self.df)
 
     def change_chart(self, chart_type):
         self.df_plot_viewer.chart_type = chart_type
-        for action in self.chart_type_menu.actions():
+        for action in self.chart_type_submenu.actions():
             action.setChecked(action.text() == chart_type)
         if self.df is not None:
             self.dataframe_changed(self.df)
@@ -602,13 +566,38 @@ class PandasViewer(QtGui.QMainWindow):
 
     def reset_all(self):
         [action.setChecked(False) for action in self.freq_submenu.actions()]
-        [action.setChecked(False) for action in self.agg_submenu.actions()]
+        [action.setChecked(False) for action in self.how_submenu.actions()]
         self.legend_action.setChecked(True)
         self.freq = None
         self.agg = None
         self.df = pd.DataFrame()
         self.displayed_df = pd.DataFrame()
 
+    def _create_submenu(self, parent_menu, name, menu_items, func):
+        name = name.lower()
+        submenu = QtGui.QMenu(name)
+        self.__setattr__('{}_submenu'.format(name), submenu)
+        submapper = QtCore.QSignalMapper(self)
+        self.__setattr__('{}_mapper'.format(name), submapper)
+        for key, arg in menu_items.iteritems():
+            action = QtGui.QAction(
+                arg, self, checkable=True,
+                shortcut=QtGui.QKeySequence('Ctrl+Shift+{}'.format(key)))
+            submapper.setMapping(action, arg)
+            action.triggered.connect(submapper.map)
+            submenu.addAction(action)
+        submapper.mapped['QString'].connect(func)
+        parent_menu.addMenu(submenu)
+
+    def _create_action(self, parent_menu, name, display_name, shortcut, func,
+                      checkable=False):
+        if isinstance(shortcut, str):
+            shortcut = QtGui.QKeySequence(shortcut)
+        action = QtGui.QAction(display_name, parent_menu, checkable=checkable,
+                               shortcut=shortcut)
+        action.triggered.connect(func)
+        parent_menu.addAction(action)
+        self.__setattr__(name, action)
 
 
 def main():
