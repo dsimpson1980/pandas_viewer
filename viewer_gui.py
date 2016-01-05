@@ -182,6 +182,7 @@ class DataFramePlotWidget(QtGui.QWidget):
         self.fig = Figure()
         self.canvas = FigureCanvas(self.fig)
         self.chart_type = 'line'
+        self.secondary_axis = False
         self.canvas.setParent(self)
         self.toolbar = NavigationToolbar(self.canvas, self)
 
@@ -191,6 +192,9 @@ class DataFramePlotWidget(QtGui.QWidget):
 
         self.setLayout(self.vbox)
         self.subplot = self.fig.add_subplot(111)
+        self.ax1 = self.subplot.axes
+        self.ax2 = self.ax1.twinx()
+
         self.legend = self.subplot.legend([])
         self.set_dataframe(df)
 
@@ -207,8 +211,17 @@ class DataFramePlotWidget(QtGui.QWidget):
             axis=1).values if self.chart_type == 'stack' else dataframe.values
         if not dataframe.empty:
             self.subplot.clear()
-            self.subplot.plot_date(dataframe.index, values, '-')
-            legend = self.subplot.legend(self.dataframe.columns)
+            self.ax1.cla()
+            self.ax2.cla()
+            if isinstance(dataframe.index, pd.DatetimeIndex):
+                self.subplot.plot_date(dataframe.index, values, '-')
+            else:
+                if self.secondary_axis and values.shape[1] == 2:
+                    self.ax1.plot(dataframe.index, values[:, 0], '-')
+                    self.ax2.plot(dataframe.index, values[:, 1], '-g')
+                else:
+                    self.subplot.plot(dataframe.index, values, '-')
+                legend = self.subplot.legend(self.dataframe.columns)
             legend.set_visible(self.legend.get_visible())
             self.legend = legend
 
@@ -452,6 +465,8 @@ class PandasViewer(QtGui.QMainWindow):
                             'Ctrl+0', self.change_strip_zeros, checkable=True)
         self._create_action(self.style_menu, 'legend_action', 'Legend',
                             'Ctrl+L', self.change_legend, checkable=True)
+        self._create_action(self.style_menu, 'secondary_axis', 'Secondary Axis',
+                            'Ctrl+2', self.change_secondary_axis, checkable=True)
 
     def init_menu(self):
         """Initiate the drop down menus for the window"""
@@ -531,6 +546,14 @@ class PandasViewer(QtGui.QMainWindow):
         """
         self.df_plot_viewer.legend.set_visible(self.legend_action.isChecked())
         self.df_plot_viewer.draw()
+
+    def change_secondary_axis(self):
+        """Set the visibility of the subplot legend to match the checked status
+        of the submenu item.  The submenu item is checkable and as such changes
+        state automatically when clicked
+        """
+        self.df_plot_viewer.secondary_axis = not self.df_plot_viewer.secondary_axis
+        self.dataframe_changed(self.df)
 
     @update_dataframe
     def change_strip_zeros(self):
