@@ -1,0 +1,1 @@
+pyinstaller --onefile --noconsole viewer_gui.py

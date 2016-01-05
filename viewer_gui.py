@@ -221,7 +221,7 @@ class DataFramePlotWidget(QtGui.QWidget):
                     self.ax2.plot(dataframe.index, values[:, 1], '-g')
                 else:
                     self.subplot.plot(dataframe.index, values, '-')
-                legend = self.subplot.legend(self.dataframe.columns)
+            legend = self.subplot.legend(self.dataframe.columns)
             legend.set_visible(self.legend.get_visible())
             self.legend = legend
 
