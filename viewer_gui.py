@@ -22,6 +22,8 @@ from simp_tools import pickling
 # ToDo fix pyinstaller build so that menu items are shown
 # ToDo Add Status in window showing freq, agg, and zeros_stripped
 # ToDo fix bug where plot is not being cleared on loading new file
+# ToDo remove Ambiguous shortcut overload: Ctrl+Shift+L refers to line chart and last style
+
 
 
 def update_dataframe(obj):
@@ -585,7 +587,8 @@ class PandasViewer(QtGui.QMainWindow):
             self.obj = obj
         elif isinstance(obj, pd.core.generic.NDFrame):
             obj_name = os.path.splitext(os.path.basename(self.filepath))[0]
-            self.obj = {obj_name: obj}
+            self.obj[obj_name] = obj
+            # self.obj = {obj_name: obj}
         else:
             msg_box = QtGui.QMessageBox()
             msg = 'Pickle file should contain a dict of pandas objects or a '
