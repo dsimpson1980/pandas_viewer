@@ -22,8 +22,7 @@ from simp_tools import pickling
 # ToDo fix pyinstaller build so that menu items are shown
 # ToDo Add Status in window showing freq, agg, and zeros_stripped
 # ToDo fix bug where plot is not being cleared on loading new file
-# ToDo remove Ambiguous shortcut overload: Ctrl+Shift+L refers to line chart and last style
-
+# ToDo Add support for loading mutliple pickles when one contains a dict (multilevel dict support)
 
 
 def update_dataframe(obj):
