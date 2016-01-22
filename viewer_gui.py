@@ -6,6 +6,7 @@ import os
 import h5py
 import matplotlib
 import functools
+import logging
 
 matplotlib.rcParams['backend.qt4'] = 'PySide'
 
@@ -14,6 +15,8 @@ from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as Navigatio
 from matplotlib.figure import Figure
 
 from smartest.tools import pickling
+from smartest.gui_ext import DataFrameTableView, EmittingStream
+
 
 # ToDo Add email plot icon to navigation bar
 # ToDo Add email plot functionality (save png to buffer then attach to email)
@@ -33,133 +36,6 @@ def update_dataframe(obj):
         self.dataframe_changed(self.df)
         return result
     return func
-
-
-class DataFrameTableView(QtGui.QTableView):
-
-    def __init__(self, df):
-        """Initiate the TableView with pd.DataFrame df
-
-        Parameters
-        ----------
-        df: pd.DataFrame
-            The DataFrame to display in the TableView
-
-        Returns
-        -------
-        DataFrameTableView
-        """
-        QtGui.QTableView.__init__(self)
-        self.resize(500, 500)
-        if df is not None:
-            self.set_dataframe(df)
-
-    def set_dataframe(self, df):
-        """Setter for the dataframe property
-
-        Parameters
-        ----------
-
-        df: pd.DataFrame
-            The pd.DataFrame to set the property
-        """
-        table_model = DataFrameTableModel(self, df)
-        self.df = df
-        self.setModel(table_model)
-        self.resizeColumnsToContents()
-
-
-class DataFrameTableModel(QtCore.QAbstractTableModel):
-
-    def __init__(self, parent, df):
-        """Initiate the Table Model from a parent object, that should be a
-        QtGui.QTableView and an initial pd.DataFrame, df
-
-        Parameters
-        ----------
-        parent: QtGui.QTableView
-            The parent object for the the instance
-        df: pd.DataFrame
-            The pd.DataFrame used to initialise the model
-
-        Returns
-        -------
-        DataFrameTableModel
-        """
-        QtCore.QAbstractTableModel.__init__(self, parent)
-        self.df = df
-
-    def rowCount(self, parent):
-        """Returns the length of the DataFrame property of the parent object
-
-        Parameters
-        ----------
-        parent: The parent object used to extract the DataFrame to measure
-
-        Returns
-        -------
-        int
-        """
-        return len(self.df)
-
-    def columnCount(self, parent):
-        """Returns the number of columns in the DataFrame with a plus one for
-        the index column
-
-        Parameters
-        ----------
-        parent: The parent object used to extract the DataFrame to measure
-
-        Returns
-        -------
-        int
-        """
-        return len(self.df.columns) + 1
-
-    def data(self, index, role):
-        """Used to extract the data from the DataFrame for the row and column
-        specified in the index
-
-        Parameters
-        ----------
-        index: QtCore.QModelIndex
-            The index object to use to lookup data in the DataFrame
-        role: int
-
-        Returns
-        -------
-        str
-        """
-        if not index.isValid() or role != QtCore.Qt.DisplayRole:
-            value = None
-        else:
-            col, row = index.column(), index.row()
-            if col == 0:
-                value = self.df.index[row].strftime('%d-%b-%y %H:%M')
-            else:
-                value = str(self.df.iloc[row, col-1])
-        return value
-
-    def headerData(self, idx, orientation, role):
-        """Returns the column name of the dataframe at idx or 'Timestamp' if the
-         idx = 0
-
-        idx: int
-            The integer index of the column header, 0 indicates the index
-        orientation: QtCore.Qt.Orientation
-            Indicates the orientation of the object, either QtCore.Qt.Horizontal
-            or QtCore.Qt.Vertical
-        role: int
-
-        Returns
-        -------
-        str
-        """
-        if orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole:
-            value = 'Timestamp' if idx == 0 else self.df.columns[idx-1]
-        else:
-            value = None
-        return value
 
 
 class DataFramePlotWidget(QtGui.QWidget):
@@ -642,4 +518,13 @@ def main():
     app.exec_()
 
 if __name__ == '__main__':
-    main()
+    FORMAT = '%(asctime)s %(levelname)s %(message)s'
+    filepath = os.path.join(os.path.dirname(__file__), '.pandas_viewer_log')
+    logging.basicConfig(level=logging.INFO, format=FORMAT, filename=filepath)
+    logging.info('Started up instance of viewer'.format(os.path.basename(__file__)))
+    stream = logging.getLogger().handlers[0]
+    try:
+        main()
+    except Exception, e:
+        logging.error('', exc_info=True)
+        raise
