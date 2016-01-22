@@ -13,7 +13,7 @@ from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 
-from simp_tools import pickling
+from smartest.tools import pickling
 
 # ToDo Add email plot icon to navigation bar
 # ToDo Add email plot functionality (save png to buffer then attach to email)
