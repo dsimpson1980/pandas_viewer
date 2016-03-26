@@ -1,6 +1,7 @@
 from PySide import QtGui, QtCore
 import pandas as pd
 import os
+from functools import partial
 
 import pickling
 
@@ -8,7 +9,7 @@ import pickling
 class PandasTreeWidgetItem(QtGui.QTreeWidgetItem):
     """Basic node of a tree widget"""
 
-    def __init__(self, *args):
+    def __init__(self, keys):
         """Initiate the leaf with the non-None keys
 
         Parameters
@@ -20,9 +21,8 @@ class PandasTreeWidgetItem(QtGui.QTreeWidgetItem):
         -------
         PandasTreeWidgetItem
         """
-        self.keys = args
-        non_none_keys = [k for k in args if k is not None]
-        QtGui.QTreeWidgetItem.__init__(self, [str(non_none_keys[-1])])
+        self.keys = keys
+        QtGui.QTreeWidgetItem.__init__(self, [str(keys[-1])])
 
 
 class PandasTreeWidget(QtGui.QTreeWidget):
@@ -104,9 +104,10 @@ class PandasTreeWidget(QtGui.QTreeWidget):
         result = []
         for item in self.selectedItems():
             obj = reduce(lambda x, y: x.get(y), (self.obj,) + item.keys)
-            if isinstance(result, pd.Panel):
-                # add iterations to append each slice of dataframe in turn
-                pass
+            if isinstance(obj, pd.Panel):
+                for itm in obj.items:
+                    df = obj.get(itm)
+                    result.append(df)
             else:
                 result.append(obj)
         if len(result) == 1 and isinstance(result[0], pd.DataFrame):
@@ -143,24 +144,46 @@ class PandasTreeWidget(QtGui.QTreeWidget):
         obj = load_file(filepath)
         self.add_obj_to_tree({filename: obj})
 
-    def add_obj_to_tree(self, d):
-        root = self.invisibleRootItem()
+    def add_obj_to_tree(self, d, root=None):
+        if root is None:
+            root = self.invisibleRootItem()
         for key, value in d.iteritems():
             self.obj[key] = value
-            base = PandasTreeWidgetItem(key)
+            base = PandasTreeWidgetItem((key,))
             root.addChild(base)
             if isinstance(value, pd.DataFrame):
                 for column in value.columns:
-                    leaf = PandasTreeWidgetItem(key, column)
+                    leaf = PandasTreeWidgetItem((key, column))
                     base.addChild(leaf)
             if isinstance(value, pd.Panel):
-                for mj in value.major_axis:
-                    twig = PandasTreeWidgetItem(key, mj)
+                for itm in value.items:
+                    twig = PandasTreeWidgetItem((key, itm))
                     base.addChild(twig)
                     for mi in value.minor_axis:
-                        leaf = PandasTreeWidgetItem(key, mj, mi)
+                        leaf = PandasTreeWidgetItem((key, itm, mi))
                         twig.addChild(leaf)
+            if isinstance(value, dict):
+                self.add_obj_to_tree(value, base)
 
+    def mousePressEvent(self, event):
+        if event.button() is QtCore.Qt.MouseButton.RightButton:
+            pos = event.pos()
+            self.context_menu(pos)
+        else:
+            super(PandasTreeWidget, self).mousePressEvent(event)
+
+    def context_menu(self, pos):
+        item = self.itemAt(pos)
+        menu = QtGui.QMenu()
+        remove = QtGui.QAction('Remove', menu)
+        remove.triggered.connect(partial(self.remove_item, item))
+        menu.addAction(remove)
+        menu.exec_(self.viewport().mapToGlobal(pos))
+
+    def remove_item(self, item):
+        keys = item.keys
+        item.parent().removeChild(item)
+        print 'Done'
 
 def load_file(filepath):
     filename, ext = os.path.splitext(filepath)

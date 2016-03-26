@@ -7,12 +7,16 @@ def main():
     output_dir = os.path.expanduser('~/random')
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-    for name, cls in dict(ts=random.RandomSeries, df=random.RandomDataFrame,
-                          pl=random.RandomPanel).iteritems():
-        obj = cls()
-        pickling.dump(obj, os.path.join(output_dir, '{}.pickle'.format(name)))
-        if not isinstance(obj, random.RandomPanel):
-            obj.to_csv(os.path.join(output_dir, '{}.csv'.format(name)))
+    ts = random.RandomSeries()
+    pickling.dump(ts, os.path.join(output_dir, 'ts.pickle'))
+    ts.to_csv(os.path.join(output_dir, 'ts.csv'))
+    df = random.RandomDataFrame()
+    pickling.dump(df, os.path.join(output_dir, 'df.pickle'))
+    df.to_csv(os.path.join(output_dir, 'df.csv'))
+    pl = random.RandomPanel()
+    pickling.dump(pl, os.path.join(output_dir, 'pl.pickle'))
+    pickling.dump(dict(ts=ts, df=df, pl=pl),
+                  os.path.join(output_dir, 'dict.pickle'))
 
 if __name__ == '__main__':
     main()
