@@ -2,7 +2,7 @@ from PySide import QtGui, QtCore
 import pandas as pd
 import os
 
-import random
+import pickling
 
 
 class PandasTreeWidgetItem(QtGui.QTreeWidgetItem):
@@ -88,8 +88,6 @@ class PandasTreeWidget(QtGui.QTreeWidget):
                         leaf = PandasTreeWidgetItem(key, mj, mi)
                         twig.addChild(leaf)
 
-        self.expandToDepth(3)
-
     def selectionChanged(self, selected, deselected):
         """Construct a DataFrame from selections in the tree and pass to
         dataframe_changed to populate the table widget and pass to the plot.
@@ -114,50 +112,7 @@ class PandasTreeWidget(QtGui.QTreeWidget):
         if len(result) == 1 and isinstance(result[0], pd.DataFrame):
             result = result[0]
         else:
-            result = pd.DataFrame(pd.concat(result))
-        #     non_none_keys = [k for k in keys_for_item if k is not None]
-        #     if len(keys_for_item) == 1:
-        #         # pd.Series
-        #         name = keys_for_item[0]
-        #         obj = self.obj[name]
-        #         if isinstance(obj, pd.Series):
-        #             result[name] = self.obj[name]
-        #         elif isinstance(obj, pd.DataFrame):
-        #             for col_name, ts in obj.iteritems():
-        #                 result['%s[%s]' % (name, col_name)] = ts
-        #     elif len(keys_for_item) == 2:
-        #         # pd.DataFrame
-        #         df_name = keys_for_item[0]
-        #         df = self.obj[df_name]
-        #         if len(non_none_keys) == 2:
-        #             col_name = keys_for_item[1]
-        #             result['%s[%s]' % (df_name, col_name)] = df[col_name]
-        #         elif len(non_none_keys) == 1:
-        #             for col_name, value in df.iteritems():
-        #                 result['%s[%s]' % (df_name, col_name)] = df[col_name]
-        #         else:
-        #             raise ValueError('len of non_keys %s not covered' % len(non_none_keys))
-        #     elif len(keys_for_item) == 3:
-        #         # pd.Panel selection
-        #         pl = self.obj[keys_for_item[0]]
-        #         pl_name, mj, mi = keys_for_item
-        #         if mj is None:
-        #             # whole panel selection
-        #             # ToDo submit bug report for doctstring pd.Panel.iteritems()
-        #             for mj in pl.major_axis:
-        #                 for mi in pl.minor_axis:
-        #                     result['%s[:, %s, %s]' % (pl_name, mj, mi
-        #                         )] = pl.ix[:, mj, mi]
-        #         elif mi is None:
-        #             # dataframe slice of Panel
-        #             for mi in pl.minor_axis:
-        #                 result['%s[:, %s, %s]' % (pl_name, mj, mi)] = pl.ix[:, mj, mi]
-        #         else:
-        #             # single Series slice of Panel
-        #             result['%s[:, %s, %s]' % tuple(keys_for_item)] = pl.ix[:, mj, mi]
-        #     else:
-        #         raise ValueError('len of keys %s is not covered' % len(keys_for_item))
-        # result = pd.DataFrame(result)
+            result = pd.DataFrame(pd.concat(result, axis=1))
         self.selection_made.emit(result)
 
     def dragEnterEvent(self, event):
@@ -208,4 +163,11 @@ class PandasTreeWidget(QtGui.QTreeWidget):
 
 
 def load_file(filepath):
-    return random.RandomDataFrame()
+    filename, ext = os.path.splitext(filepath)
+    if ext == '.csv':
+        obj = pd.read_csv(filepath)
+    elif ext == '.pickle':
+        obj = pickling.load(filepath)
+    else:
+        raise ValueError('file ext %s not implemented', ext)
+    return obj

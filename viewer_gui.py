@@ -242,6 +242,8 @@ class PandasViewer(QtGui.QMainWindow):
         >>> PandasViewer(dataframe) #doctest: +ELLIPSIS
         <viewer_gui.PandasViewer object at ...>
         """
+        self.version = 0.1
+        self.settings = QtCore.QSettings('pandas_viewer_{}'.format(self.version))
         if not obj:
             obj = {}
         QtGui.QMainWindow.__init__(self)
@@ -394,41 +396,14 @@ class PandasViewer(QtGui.QMainWindow):
         pass
 
     @update_dataframe
-    def open_file(self, path=os.path.expanduser('~')):
-        """Open either a pickle or h5 file"""
-        self.filepath, _ = QtGui.QFileDialog.getOpenFileName(
-            self, 'Select pickle to load', path)
-        filename, ext = os.path.splitext(os.path.basename(self.filepath))
-        if filename == '':
-            return
-        if ext == '.pickle':
-            obj = pickling.load(self.filepath)
-        elif ext == '.h5':
-            with h5py.File(self.filepath, 'r') as file_obj:
-                keys = file_obj.keys()
-            obj = {}
-            for key in keys:
-                obj[key] = pd.read_hdf(self.filepath, key)
-                col_idx = [k for k, d in obj[key].dtypes.iteritems() if d.type == np.float64]
-                if 'timestamp' in obj[key].columns:
-                    obj[key].index = [pd.Timestamp(t, tz='UTC') for t in obj[key]['timestamp']]
-                obj[key] = obj[key][col_idx]
-        else:
-            raise ValueError('File type %s not supported', ext)
-        if isinstance(obj, dict):
-            self.obj = obj
-        elif isinstance(obj, pd.core.generic.NDFrame):
-            obj_name = os.path.splitext(os.path.basename(self.filepath))[0]
-            self.obj = {obj_name: obj}
-        else:
-            msg_box = QtGui.QMessageBox()
-            msg = 'Pickle file should contain a dict of pandas objects or a '
-            msg += 'pandas object\n Object in pickle is %s' % type(obj)
-            msg_box.setText(msg)
-            msg_box.exec_()
-            return
-        self.reset_all()
-        self.tree_widget.set_tree(self.obj)
+    def open_file(self):
+        open_dirpath = self.settings.value('open_dirpath')
+        if open_dirpath is None:
+            open_dirpath = os.path.expanduser('~')
+        filepath, _ = QtGui.QFileDialog.getOpenFileName(
+            self, 'Select pickle to load', open_dirpath)
+        self.settings.setValue('open_dirpath', os.path.dirname(filepath))
+        self.tree_widget.add_file_to_tree(filepath)
 
     def reset_all(self):
         [action.setChecked(False) for action in self.freq_submenu.actions()]
