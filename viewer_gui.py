@@ -403,7 +403,8 @@ class PandasViewer(QtGui.QMainWindow):
         filepath, _ = QtGui.QFileDialog.getOpenFileName(
             self, 'Select pickle to load', open_dirpath)
         self.settings.setValue('open_dirpath', os.path.dirname(filepath))
-        self.tree_widget.add_file_to_tree(filepath)
+        if filepath != '':
+            self.tree_widget.add_file_to_tree(filepath)
 
     def reset_all(self):
         [action.setChecked(False) for action in self.freq_submenu.actions()]
