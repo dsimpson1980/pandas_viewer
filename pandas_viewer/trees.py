@@ -9,7 +9,7 @@ import pickling
 class PandasTreeWidgetItem(QtGui.QTreeWidgetItem):
     """Basic node of a tree widget"""
 
-    def __init__(self, keys):
+    def __init__(self, *args):
         """Initiate the leaf with the non-None keys
 
         Parameters
@@ -21,8 +21,8 @@ class PandasTreeWidgetItem(QtGui.QTreeWidgetItem):
         -------
         PandasTreeWidgetItem
         """
-        self.keys = keys
-        QtGui.QTreeWidgetItem.__init__(self, [str(keys[-1])])
+        super(PandasTreeWidgetItem, self).__init__([str(args[-1])])
+        self.keys = args
 
 
 class PandasTreeWidget(QtGui.QTreeWidget):
@@ -149,18 +149,18 @@ class PandasTreeWidget(QtGui.QTreeWidget):
             root = self.invisibleRootItem()
         for key, value in d.iteritems():
             self.obj[key] = value
-            base = PandasTreeWidgetItem((key,))
+            base = PandasTreeWidgetItem(key)
             root.addChild(base)
             if isinstance(value, pd.DataFrame):
                 for column in value.columns:
-                    leaf = PandasTreeWidgetItem((key, column))
+                    leaf = PandasTreeWidgetItem(key, column)
                     base.addChild(leaf)
             if isinstance(value, pd.Panel):
                 for itm in value.items:
-                    twig = PandasTreeWidgetItem((key, itm))
+                    twig = PandasTreeWidgetItem(key, itm)
                     base.addChild(twig)
                     for mi in value.minor_axis:
-                        leaf = PandasTreeWidgetItem((key, itm, mi))
+                        leaf = PandasTreeWidgetItem(key, itm, mi)
                         twig.addChild(leaf)
             if isinstance(value, dict):
                 self.add_obj_to_tree(value, base)
@@ -182,7 +182,14 @@ class PandasTreeWidget(QtGui.QTreeWidget):
 
     def remove_item(self, item):
         keys = item.keys
-        item.parent().removeChild(item)
+        parent = item.parent()
+        if parent is None:
+            parent = self.invisibleRootItem()
+        parent.removeChild(item)
+        obj = reduce(lambda x, y: x.get(y), (self.obj,) + keys[:-1])
+        obj.pop(keys[-1])
+        if parent.childCount() == 0 and parent is not self.invisibleRootItem():
+            self.remove_item(parent)
         print 'Done'
 
 def load_file(filepath):
