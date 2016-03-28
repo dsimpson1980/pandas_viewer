@@ -25,3 +25,7 @@ class RandomPanel(pd.Panel):
         dates = pd.date_range(start, end, freq=freq)
         values = np.random.rand(items, len(dates), mnr)
         super(RandomPanel, self).__init__(values, major_axis=dates)
+
+    @property
+    def _constructor(self):
+        return pd.Panel
