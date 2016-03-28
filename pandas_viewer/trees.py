@@ -52,41 +52,9 @@ class PandasTreeWidget(QtGui.QTreeWidget):
         self.setVerticalScrollMode(self.ScrollPerPixel)
         self.setColumnCount(1)
         self.setHeaderLabels(['Pandas Variables'])
-        self.set_tree(obj)
+        self.obj = {}
+        self.add_obj_to_tree(obj)
         self.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
-
-    def set_tree(self, obj):
-        """Iterate through the object, obj, levels and set the nodes in the tree
-
-        Parameters
-        ----------
-        obj: object, iterable
-            The object to iterate through
-        """
-        self.clear()
-        self.obj = obj
-        root = self.invisibleRootItem()
-        idx = obj.items()
-        idx.sort()
-        for key, value in idx:
-            if isinstance(value, pd.Series):
-                leaf = PandasTreeWidgetItem(key)
-                root.addChild(leaf)
-            if isinstance(value, pd.DataFrame):
-                twig = PandasTreeWidgetItem(key, None)
-                root.addChild(twig)
-                for column in value.columns:
-                    leaf = PandasTreeWidgetItem(key, column)
-                    twig.addChild(leaf)
-            if isinstance(value, pd.Panel):
-                branch = PandasTreeWidgetItem(key, None, None)
-                root.addChild(branch)
-                for mj in value.major_axis:
-                    twig = PandasTreeWidgetItem(key, mj, None)
-                    branch.addChild(twig)
-                    for mi in value.minor_axis:
-                        leaf = PandasTreeWidgetItem(key, mj, mi)
-                        twig.addChild(leaf)
 
     def selectionChanged(self, selected, deselected):
         """Construct a DataFrame from selections in the tree and pass to
