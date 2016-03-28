@@ -13,6 +13,7 @@ matplotlib.rcParams['backend.qt4'] = 'PySide'
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
+from matplotlib import pyplot as plt
 
 from pandas_viewer import pickling, trees
 
@@ -209,7 +210,12 @@ class DataFramePlotWidget(QtGui.QWidget):
             axis=1).values if self.chart_type == 'stack' else dataframe.values
         if not dataframe.empty:
             self.subplot.clear()
-            self.subplot.plot_date(dataframe.index, values, '-')
+            if self.chart_type == 'line':
+                self.subplot.plot_date(dataframe.index, values, '-')
+            elif self.chart_type == 'stack':
+                self.subplot.stackplot(dataframe.index, dataframe.values.transpose())
+            else:
+                raise ValueError('Chart type %s not recognised', self.chart_type)
             legend = self.subplot.legend(self.dataframe.columns)
             legend.set_visible(self.legend.get_visible())
             self.legend = legend
